@@ -1,0 +1,22 @@
+<html>
+<head>
+  <title>Jetpack Code Editor</title>
+</head>
+<body style="padding: 0; margin: 0;">
+<script src="js/ext/io.js"></script>
+<script src="js/ext/bespin-embedded.js"></script>
+<script src="js/editor.js"></script>
+<script>
+window.addEventListener(
+  "load",
+  function() {
+    var filename = decodeURI(window.location.hash.slice(1));
+    var editor = new JetpackCodeEditor(filename);
+    editor.initUI('editor', window);
+  },
+  false
+);
+</script>
+<div id="editor" style="height: 300px;"></div>
+</body>
+</html>
