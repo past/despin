@@ -15,7 +15,7 @@
                    em:homepageURL="http://github.com/past/despin/"
                    em:aboutURL="chrome://despin/content/about.xul"
                    em:optionsURL="chrome://despin/content/options.xul"
-                   em:iconURL="chrome://despin/skin/icon-32.png">
+                   em:iconURL="chrome://despin/skin/logo-32.png">
     <em:targetApplication RDF:resource="rdf:#$uSYcA1"/>
   </RDF:Description>
 </RDF:RDF>
