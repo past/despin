@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
+         xmlns:NC="http://home.netscape.com/NC-rdf#"
+         xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="rdf:#$uSYcA1"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:minVersion="3.0"
+                   em:maxVersion="3.5.*" />
+  <RDF:Description RDF:about="urn:mozilla:install-manifest"
+                   em:id="firestatus@astithas.com"
+                   em:name="FireStatus"
+                   em:version="1.8.2"
+                   em:creator="Panagiotis Astithas"
+                   em:description="A status update utility for multiple social networks."
+                   em:homepageURL="http://code.google.com/p/firestatus/"
+                   em:aboutURL="chrome://firestatus/content/about.xul"
+                   em:optionsURL="chrome://firestatus/content/options.xul"
+                   em:iconURL="chrome://firestatus/skin/fs-icon-32.png">
+    <em:contributor>Christos Stathis</em:contributor>
+    <em:contributor>Dionysios Synodinos</em:contributor>
+    <em:targetApplication RDF:resource="rdf:#$uSYcA1"/>
+  </RDF:Description>
+</RDF:RDF>

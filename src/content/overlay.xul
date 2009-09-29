@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://despin/skin/overlay.css" type="text/css"?>
+
+<!DOCTYPE window SYSTEM "chrome://despin/locale/despin.dtd">
+<overlay id="firefoxOverlay" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+    <script type="application/x-javascript" src="chrome://despin/content/overlay.js"/>
+
+    <menupopup id="menu_ToolsPopup">
+	<menuitem id="despintoolsmenu" label="Despin" oncommand="loadDespin()" accesskey="D" position="8" class="menuitem-iconic"/>
+    </menupopup>
+
+    <toolbarpalette id="BrowserToolbarPalette">
+	<toolbarbutton id="despin-button" label="Despin" oncommand="loadDespin()" onclick="if (event.button == 1) loadDespin()" class="toolbarbutton-1 chromeclass-toolbar-additional" tooltiptext="Despin"/>
+    </toolbarpalette>
+    <statusbar id="status-bar">
+	<statusbarpanel id="despin-panel" onclick="loadDespin();">
+	   <image id="despin-icon" tooltiptext="&iconTip;" src="chrome://despin/skin/logo.png"/>
+	</statusbarpanel>
+    </statusbar>
+
+</overlay>
