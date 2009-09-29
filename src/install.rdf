@@ -7,17 +7,15 @@
                    em:minVersion="3.0"
                    em:maxVersion="3.5.*" />
   <RDF:Description RDF:about="urn:mozilla:install-manifest"
-                   em:id="firestatus@astithas.com"
-                   em:name="FireStatus"
-                   em:version="1.8.2"
+                   em:id="despin@astithas.com"
+                   em:name="Despin"
+                   em:version="0.1"
                    em:creator="Panagiotis Astithas"
-                   em:description="A status update utility for multiple social networks."
-                   em:homepageURL="http://code.google.com/p/firestatus/"
-                   em:aboutURL="chrome://firestatus/content/about.xul"
-                   em:optionsURL="chrome://firestatus/content/options.xul"
-                   em:iconURL="chrome://firestatus/skin/fs-icon-32.png">
-    <em:contributor>Christos Stathis</em:contributor>
-    <em:contributor>Dionysios Synodinos</em:contributor>
+                   em:description="A text editor for Firefox"
+                   em:homepageURL="http://github.com/past/despin/"
+                   em:aboutURL="chrome://despin/content/about.xul"
+                   em:optionsURL="chrome://despin/content/options.xul"
+                   em:iconURL="chrome://despin/skin/icon-32.png">
     <em:targetApplication RDF:resource="rdf:#$uSYcA1"/>
   </RDF:Description>
 </RDF:RDF>
