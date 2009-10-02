@@ -1,3 +1,4 @@
+
 function JetpackCodeEditor(filename) {
   if (!filename)
     throw new Error("filename must be supplied.");
@@ -10,8 +11,7 @@ JetpackCodeEditor.prototype = {
   _component: null,
 
   get fullPath() {
-    var file = DirIO.get('ProfD');
-    file.append(this.filename);
+    var file = FileIO.open(this.filename);
     return file;
   },
 
