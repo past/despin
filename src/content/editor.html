@@ -1,6 +1,7 @@
 <html>
 <head>
     <title>Jetpack Code Editor</title>
+    <link rel="stylesheet" type="text/css" href="chrome://despin/skin/editor.css" />
 </head>
 <body style="padding: 0; margin: 0;">
 <script src="io.js"></script>
@@ -22,16 +23,17 @@ $(document).ready(function(){
     commands.openScratchpad();
 });
 </script>
+<div class="toolbar">
 <table>
-<tr>
-    <td><a id="open" href="#" title="Open file">Open</a>
+<tr class="toolbar">
+    <td><a id="open" href="#" class="toolbar" title="Open file">Open</a>
     </td>
-    <td><a id="save" href="#" title="Save file">Save</a>
+    <td><a id="save" href="#" class="toolbar" title="Save file">Save</a>
     </td>
-    <td><a id="print" href="#" title="Print file">Print</a>
+    <td><a id="print" href="#" class="toolbar" title="Print file">Print</a>
     </td>
 </tr>
-</table>
+</table></div>
 <div id="editor" style="height: 600px;"></div>
 </body>
 </html>

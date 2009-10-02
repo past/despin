@@ -1,4 +1,3 @@
-
 function JetpackCodeEditor(filename) {
   if (!filename)
     throw new Error("filename must be supplied.");
@@ -39,7 +38,7 @@ JetpackCodeEditor.prototype = {
         {language: "js",
          loadfromdiv: false});
       self._component.setContent(self.loadData());
-      save = function() { self.saveData(self._component.getContent()); };
+      self.save = function() { self.saveData(self._component.getContent()); };
     } else {
       var element = window.document.getElementById(divId);
       var editor = window.document.createElement('textarea');
@@ -51,11 +50,11 @@ JetpackCodeEditor.prototype = {
       editor.style.backgroundColor = "#2a211c";
       editor.style.padding = "0.5em";
       editor.value = self.loadData();
-      save = function() { self.saveData(editor.value); };
+      self.save = function() { self.saveData(editor.value); };
     }
 
-    window.addEventListener("blur", save, false);
-    window.addEventListener("unload", save, false);
+    window.addEventListener("blur", self.save, false);
+    window.addEventListener("unload", self.save, false);
   },
 
   loadData: function loadData() {

@@ -36,6 +36,7 @@ commands.open = function () {
 }
 
 commands.save = function () {
+    commands.editor.save();
 }
 
 commands.print = function () {
@@ -49,6 +50,8 @@ commands.openScratchpad = function () {
 
 commands.loadInEditor = function (filename) {
     var editor = new JetpackCodeEditor(filename);
+    // Store the reference to the editor.
+    commands.editor = editor;
     editor.initUI('editor', window);
 }
 
