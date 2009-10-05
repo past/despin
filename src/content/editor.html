@@ -12,21 +12,24 @@
 <script>
 $(document).ready(function(){
     $("#open").click(function(event) {
-	commands.open();
+    	commands.open();
     });
     $("#save").click(function(event) {
-	commands.save();
+    	commands.save();
     });
     $("#print").click(function(event) {
-	commands.print();
+    	commands.print();
     });
     $("#scratch").click(function(event) {
-	commands.openScratchpad();
+    	commands.openScratchpad();
     });
+    // Resize the editor to fill the window.
+    $("#editor").height($(document).height() - $("#toolbar").outerHeight(true) - 16);
+    // Open an empty scratchpad for starters.
     commands.openScratchpad();
 });
 </script>
-<div class="toolbar">
+<div id="toolbar" class="toolbar">
 <table>
 <tr class="toolbar">
     <td><a id="open" href="#" class="toolbar" title="Open file">
@@ -43,6 +46,6 @@ $(document).ready(function(){
     </td>
 </tr>
 </table></div>
-<div id="editor" style="height: 600px;"></div>
+<div id="editor" style="height: 100px;"></div>
 </body>
 </html>

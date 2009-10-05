@@ -48,14 +48,5 @@ Editor.prototype = {
     if (!file.exists())
       FileIO.create(file);
     FileIO.write(file, data, 'w', this.CHARSET);
-  },
-
-  registerFeed: function registerFeed(feedManager) {
-    feedManager.addSubscribedFeed({url: this.url,
-                                   type: "jetpack",
-                                   sourceUrl: this.url,
-                                   sourceCode: this.loadData(),
-                                   canAutoUpdate: true,
-                                   isBuiltIn: true});
   }
 };
