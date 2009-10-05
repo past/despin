@@ -29,7 +29,7 @@ commands.open = function () {
     var res = fp.show();
 
     if (res == nsIFilePicker.returnOK) {
-	    commands.loadInEditor(fp.file.path);
+	    commands.load(fp.file.path);
     }
 
     return res == nsIFilePicker.returnOK;
@@ -45,13 +45,21 @@ commands.print = function () {
 commands.openScratchpad = function () {
     var file = DirIO.get('ProfD');
     file.append("despin-scratchpad");
-    commands.loadInEditor(file.path);
+    commands.load(file.path);
 }
 
-commands.loadInEditor = function (filename) {
-    var editor = new JetpackCodeEditor(filename);
+commands.load = function (path) {
+    var separator;
+    if (window.navigator && window.navigator.oscpu.indexOf("Windows") != -1)
+        separator = path.lastIndexOf('\\');
+    else
+        separator = path.lastIndexOf('/');
+    var filename = (separator === -1) ? path : path.substring(separator + 1, path.length);
+    var editor = new Editor(path);
     // Store the reference to the editor.
     commands.editor = editor;
+    
+    document.title = filename + " (" + path + ")";
     editor.initUI('editor', window);
 }
 
