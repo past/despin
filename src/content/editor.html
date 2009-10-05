@@ -20,6 +20,9 @@ $(document).ready(function(){
     $("#print").click(function(event) {
 	commands.print();
     });
+    $("#scratch").click(function(event) {
+	commands.openScratchpad();
+    });
     commands.openScratchpad();
 });
 </script>
@@ -34,6 +37,9 @@ $(document).ready(function(){
     </td>
     <td><a id="print" href="#" class="toolbar" title="Print file">
             <img class="toolbar" src="chrome://despin/skin/fileprint.png"></a>
+    </td>
+    <td><a id="scratch" href="#" class="toolbar" title="Open scratchpad">
+            <img class="toolbar" src="chrome://despin/skin/scratchpad.png"></a>
     </td>
 </tr>
 </table></div>
