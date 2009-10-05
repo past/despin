@@ -2,50 +2,47 @@
 <head>
     <title>Despin Text Editor</title>
     <link rel="stylesheet" type="text/css" href="chrome://despin/skin/editor.css" />
+    <script src="io.js"></script>
+    <script src="bespin-embedded.js"></script>
+    <script src="editor.js"></script>
+    <script src="jquery-1.3.2.js"></script>
+    <script src="commands.js"></script>
+    <script>
+        $(document).ready(function(){
+            $("#open").click(function(event) {
+    	        commands.open();
+            });
+            $("#save").click(function(event) {
+    	        commands.save();
+            });
+            $("#print").click(function(event) {
+    	        commands.print();
+            });
+            $("#scratch").click(function(event) {
+    	        commands.openScratchpad();
+            });
+            commands.resize();
+            // Open an empty scratchpad for starters.
+            commands.openScratchpad();
+    	    window.addEventListener("resize", commands.resize, false);
+        });
+    </script>
 </head>
-<body style="padding: 0; margin: 0;">
-<script src="io.js"></script>
-<script src="bespin-embedded.js"></script>
-<script src="editor.js"></script>
-<script src="jquery-1.3.2.js"></script>
-<script src="commands.js"></script>
-<script>
-$(document).ready(function(){
-    $("#open").click(function(event) {
-    	commands.open();
-    });
-    $("#save").click(function(event) {
-    	commands.save();
-    });
-    $("#print").click(function(event) {
-    	commands.print();
-    });
-    $("#scratch").click(function(event) {
-    	commands.openScratchpad();
-    });
-    // Resize the editor to fill the window.
-    $("#editor").height($(document).height() - $("#toolbar").outerHeight(true) - 16);
-    // Open an empty scratchpad for starters.
-    commands.openScratchpad();
-});
-</script>
+<body>
 <div id="toolbar" class="toolbar">
-<table>
-<tr class="toolbar">
-    <td><a id="open" href="#" class="toolbar" title="Open file">
-            <img class="toolbar" src="chrome://despin/skin/fileopen.png"></a>
-    </td>
-    <td><a id="save" href="#" class="toolbar" title="Save file">
-            <img class="toolbar" src="chrome://despin/skin/filesave.png"></a>
-    </td>
-    <td><a id="print" href="#" class="toolbar" title="Print file">
-            <img class="toolbar" src="chrome://despin/skin/fileprint.png"></a>
-    </td>
-    <td><a id="scratch" href="#" class="toolbar" title="Open scratchpad">
-            <img class="toolbar" src="chrome://despin/skin/scratchpad.png"></a>
-    </td>
-</tr>
-</table></div>
-<div id="editor" style="height: 100px;"></div>
+    <a id="open" href="#" class="toolbar" title="Open file">
+        <img class="toolbar" src="chrome://despin/skin/fileopen.png" alt="Open file">
+    </a>
+    <a id="save" href="#" class="toolbar" title="Save file">
+        <img class="toolbar" src="chrome://despin/skin/filesave.png" alt="Save file">
+    </a>
+    <a id="print" href="#" class="toolbar" title="Print file">
+        <img class="toolbar" src="chrome://despin/skin/fileprint.png" alt="Print file">
+    </a>
+    <a id="scratch" href="#" class="toolbar" title="Open scratchpad">
+        <img class="toolbar" src="chrome://despin/skin/scratchpad.png" alt="Open scratchpad">
+    </a>
+</div>
+<div id="editor"/>
 </body>
 </html>

@@ -10,43 +10,36 @@ Editor.prototype = {
   _component: null,
 
   get fullPath() {
-    var file = FileIO.open(this.filename);
-    return file;
+    return FileIO.open(this.filename);
   },
 
   get url() {
     return FileIO.path(this.fullPath);
   },
 
-  initUI: function initUI(divId, window) {
+  initUI: function (divId, window) {
     // Loads and configures the objects that the editor needs
-    var self = this;
-    var save;
-
-    self._component = new bespin.editor.Component(
+    this._component = new bespin.editor.Component(
         divId,
         {language: "js",
          loadfromdiv: false});
-    self._component.setContent(self.loadData());
-    self.save = function() { self.saveData(self._component.getContent()); };
+    this._component.setContent(this.load());
 
-    window.addEventListener("blur", self.save, false);
-    window.addEventListener("unload", self.save, false);
+    // TODO: add an option for these
+    //window.addEventListener("blur", this.save, false);
+    //window.addEventListener("unload", this.save, false);
   },
 
-  loadData: function loadData() {
+  load: function () {
     var file = this.fullPath;
     if (!file.exists()) {
-      this.saveData("");
+      this.save();
       return "";
     }
     return FileIO.read(file, this.CHARSET);
   },
 
-  saveData: function saveData(data) {
-    var file = this.fullPath;
-    if (!file.exists())
-      FileIO.create(file);
-    FileIO.write(file, data, 'w', this.CHARSET);
+  save: function () {
+    FileIO.write(this.fullPath, this._component.getContent(), 'w', this.CHARSET);
   }
 };

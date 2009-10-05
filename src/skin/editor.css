@@ -1,8 +1,12 @@
+body {
+    padding: 0;
+    margin: 0;
+}
+
 .toolbar {
     border: none;
     color: #bdae98;
     background: #2a211c;
-    padding: 0.5em;
-	text-decoration: none;
+    padding: 0;
+    text-decoration: none;
 }
-

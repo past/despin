@@ -24,15 +24,15 @@ const Ci = Components.interfaces;
 
 commands.open = function () {
     var nsIFilePicker = Ci.nsIFilePicker;
-    var fp = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
-    fp.init(window, "Select file", nsIFilePicker.modeOpen);
-    var res = fp.show();
+    var picker = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+    picker.init(window, "Select file", nsIFilePicker.modeOpen);
+    var result = picker.show();
 
-    if (res == nsIFilePicker.returnOK) {
-	    commands.load(fp.file.path);
+    if (result == nsIFilePicker.returnOK) {
+	    commands.load(picker.file.path);
     }
 
-    return res == nsIFilePicker.returnOK;
+    return result == nsIFilePicker.returnOK;
 }
 
 commands.save = function () {
@@ -45,6 +45,8 @@ commands.print = function () {
 commands.openScratchpad = function () {
     var file = DirIO.get('ProfD');
     file.append("despin-scratchpad");
+    if (!file.exists())
+      FileIO.create(file);
     commands.load(file.path);
 }
 
@@ -63,3 +65,7 @@ commands.load = function (path) {
     editor.initUI('editor', window);
 }
 
+commands.resize = function () {
+    // Resize the editor to fill the window.
+    $("#editor").height($(document).height() - $("#toolbar").outerHeight(true) - 16);
+}
