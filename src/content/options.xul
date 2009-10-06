@@ -3,8 +3,7 @@
 <!DOCTYPE dialog SYSTEM "chrome://despin/locale/options.dtd">
 <prefwindow id="despinPreferences" title="&title;" type="prefwindow"
             xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-            persist="screenX screenY" buttons="accept, cancel"
-            ondialogaccept="onAccept()">
+            persist="screenX screenY" buttons="accept, cancel">
 
   <script type="application/x-javascript" src="chrome://despin/content/options.js"/>
 
