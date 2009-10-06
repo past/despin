@@ -19,6 +19,13 @@ body {
     text-decoration: none;
 }
 
+#editor {
+    cursor:text !important;
+    margin:0;
+    padding:0;
+    z-index:-1;
+}
+
 *:focus {
     outline: 0;
 }
