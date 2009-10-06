@@ -22,6 +22,61 @@ if (!commands) commands = {};
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 
+commands.onLoad = function () {
+    // Register to receive notifications of preference changes
+    var prefs = Cc["@mozilla.org/preferences-service;1"]
+        .getService(Ci.nsIPrefService).getBranch("extensions.despin.");
+    prefs.QueryInterface(Ci.nsIPrefBranch2);
+    prefs.addObserver("", this, false);
+
+    commands.saveOnClose = prefs.getBoolPref("saveOnClose");
+
+    $("#open").click(function(event) {
+	commands.open();
+    });
+    $("#save").click(function(event) {
+	commands.save();
+    });
+    $("#print").click(function(event) {
+	commands.print();
+    });
+    $("#scratch").click(function(event) {
+	commands.openScratchpad();
+    });
+    $("#options").click(function(event) {
+	commands.showPreferences();
+    });
+    commands.resize();
+    // Open an empty scratchpad for starters.
+    commands.openScratchpad();
+    window.addEventListener("resize", commands.resize, false);
+    window.addEventListener("unload", commands.onUnload, false);
+}
+
+commands.onUnload = function () {
+    var prefs = Cc["@mozilla.org/preferences-service;1"]
+        .getService(Ci.nsIPrefService).getBranch("extensions.despin.");
+    prefs.removeObserver("", this);
+}
+
+commands.observe = function (subject, topic, data) {
+    var prefs = Cc["@mozilla.org/preferences-service;1"]
+        .getService(Ci.nsIPrefService).getBranch("extensions.despin.");
+    if (topic != "nsPref:changed")
+        return;
+		
+    switch(data) {
+    case "saveOnClose":
+        this.saveOnClose = prefs.getBoolPref("saveOnClose");
+    	if (this.saveOnClose) {
+            this.editor.setAutoSave();
+        } else {
+	    this.editor.removeAutoSave();
+        }
+        break;
+    }
+}
+
 commands.open = function () {
     var nsIFilePicker = Ci.nsIFilePicker;
     var picker = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
@@ -48,6 +103,11 @@ commands.openScratchpad = function () {
     if (!file.exists())
       FileIO.create(file);
     commands.load(file.path);
+}
+
+commands.showPreferences = function () {
+    window.openDialog("chrome://despin/content/options.xul", "preferences",
+        "chrome,resizable,centerscreen,modal,dialog");
 }
 
 commands.load = function (path) {

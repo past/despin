@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<!DOCTYPE dialog SYSTEM "chrome://despin/locale/options.dtd">
+<prefwindow id="despinPreferences" title="&title;" type="prefwindow"
+            xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+            persist="screenX screenY" buttons="accept, cancel"
+            ondialogaccept="onAccept()">
+
+  <script type="application/x-javascript" src="chrome://despin/content/options.js"/>
+
+  <prefpane id="prefPane">
+    <preferences>
+      <preference id="saveOnClose" name="extensions.despin.saveOnClose" type="bool"/>
+    </preferences>
+
+    <hbox align="start">
+      <checkbox id="saveOnClose" preference="saveOnClose" label="&saveOnClose;"/>
+    </hbox>
+
+  </prefpane>
+</prefwindow>
