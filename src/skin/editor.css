@@ -5,6 +5,14 @@ body {
 
 .toolbar {
     border: none;
+    border-bottom: solid 1px #3a312c;
+    color: #bdae98;
+    background: #1a110c;
+    padding: 2;
+}
+
+.button {
+    border: none;
     color: #bdae98;
     background: #2a211c;
     padding: 0;
