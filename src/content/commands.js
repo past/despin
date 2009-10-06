@@ -127,5 +127,5 @@ commands.load = function (path) {
 
 commands.resize = function () {
     // Resize the editor to fill the window.
-    $("#editor").height($(document).height() - $("#toolbar").outerHeight(true) - 16);
+    $("#editor").height($(document).height() - $("#toolbar").outerHeight(true));
 }
