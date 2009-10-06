@@ -8,13 +8,13 @@ body {
     border-bottom: solid 1px #3a312c;
     color: #bdae98;
     background: #1a110c;
-    padding: 2;
+    padding: 4;
 }
 
 .button {
     border: none;
     color: #bdae98;
-    background: #2a211c;
+    background: #1a110c;
     padding: 0;
     text-decoration: none;
 }
