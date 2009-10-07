@@ -24,8 +24,6 @@ Editor.prototype = {
         {language: "js",
          loadfromdiv: false});
     this._component.setContent(this.load());
-    if (commands.saveOnClose)
-      this.setAutoSave();
   },
 
   load: function () {
@@ -39,15 +37,5 @@ Editor.prototype = {
 
   save: function () {
     FileIO.write(this.fullPath, this._component.getContent(), 'w', this.CHARSET);
-  },
-
-  setAutoSave: function () {
-    window.addEventListener("blur", this.save, false);
-    window.addEventListener("unload", this.save, false);
-  },
-
-  removeAutoSave: function () {
-    window.removeEventListener("blur", this.save, false);
-    window.removeEventListener("unload", this.save, false);
   }
 };

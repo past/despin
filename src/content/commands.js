@@ -51,6 +51,8 @@ commands.onLoad = function () {
     commands.openScratchpad();
     window.addEventListener("resize", commands.resize, false);
     window.addEventListener("unload", commands.onUnload, false);
+    if (this.saveOnClose)
+        this.setAutoSave();
 }
 
 commands.onUnload = function () {
@@ -64,15 +66,14 @@ commands.observe = function (subject, topic, data) {
         .getService(Ci.nsIPrefService).getBranch("extensions.despin.");
     if (topic != "nsPref:changed")
         return;
-		
+
     switch(data) {
     case "saveOnClose":
         this.saveOnClose = prefs.getBoolPref("saveOnClose");
-    	if (this.saveOnClose) {
-            this.editor.setAutoSave();
-        } else {
-	    this.editor.removeAutoSave();
-        }
+        if (this.saveOnClose)
+            this.setAutoSave();
+        else
+            this.removeAutoSave();
         break;
     }
 }
@@ -128,4 +129,18 @@ commands.load = function (path) {
 commands.resize = function () {
     // Resize the editor to fill the window.
     $("#editor").height($(document).height() - $("#toolbar").outerHeight(true));
+}
+
+commands.setAutoSave = function () {
+    window.addEventListener("blur", this.onBlur, false);
+    window.addEventListener("unload", this.onBlur, false);
+}
+
+commands.removeAutoSave = function () {
+    window.removeEventListener("blur", this.onBlur, false);
+    window.removeEventListener("unload", this.onBlur, false);
+}
+
+commands.onBlur = function () {
+    commands.editor.save();
 }
