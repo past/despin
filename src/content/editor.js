@@ -17,11 +17,18 @@ Editor.prototype = {
     return FileIO.path(this.fullPath);
   },
 
+  get extension() {
+    var i = this.filename.lastIndexOf('.');
+    if (i === -1)
+      return "js";
+    return this.filename.substring(i+1, this.filename.length);
+  },
+
   initUI: function (divId, window) {
     // Loads and configures the objects that the editor needs
     this._component = new bespin.editor.Component(
         divId,
-        {language: "js",
+        {language: this.extension,
          loadfromdiv: false});
     this._component.setContent(this.load());
   },
