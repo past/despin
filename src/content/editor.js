@@ -29,7 +29,21 @@ Editor.prototype = {
     this._component = new bespin.editor.Component(
         divId,
         {language: this.extension,
-         loadfromdiv: false});
+         loadfromdiv: false,
+         set: {
+           autoindent: 'on',
+           codecomplete: 'on',
+           highlightline: 'on',
+           smartmove: 'on',
+           strictlines: 'on',
+           syntaxcheck: 'on',
+           tabsize: 4,
+           tabmode: 'spaces',
+           tabshowspace: 'off',
+           tabarrow: 'on',
+           trimonsave: 'on'
+         }
+        });
     this._component.setContent(this.load());
   },
 
