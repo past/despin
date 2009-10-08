@@ -49,16 +49,19 @@ commands.onLoad = function () {
         commands.open();
     });
     $("#save").click(function(event) {
-	commands.save();
+        commands.save();
+    });
+    $("#saveas").click(function(event) {
+        commands.saveAs();
     });
     $("#print").click(function(event) {
-	commands.print();
+        commands.print();
     });
     $("#scratch").click(function(event) {
-	commands.openScratchpad();
+        commands.openScratchpad();
     });
     $("#options").click(function(event) {
-	commands.showPreferences();
+        commands.showPreferences();
     });
     commands.resize();
     // Open an empty scratchpad for starters.
@@ -134,15 +137,26 @@ commands.open = function () {
     picker.init(window, "Select file", nsIFilePicker.modeOpen);
     var result = picker.show();
 
-    if (result == nsIFilePicker.returnOK) {
+    if (result == nsIFilePicker.returnOK)
         commands.load(picker.file.path);
-    }
 
     return result == nsIFilePicker.returnOK;
 }
 
 commands.save = function () {
     commands.editor.save();
+}
+
+commands.saveAs = function () {
+    var nsIFilePicker = Ci.nsIFilePicker;
+    var picker = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+    picker.init(window, "Select file", nsIFilePicker.modeSave);
+    var result = picker.show();
+
+    if (result == nsIFilePicker.returnOK || result == nsIFilePicker.returnReplace)
+        commands.editor.save(picker.file.path);
+
+    return result == nsIFilePicker.returnOK;
 }
 
 commands.print = function () {
