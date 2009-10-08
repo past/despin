@@ -10,6 +10,10 @@
   <text value="&createdBy;" style="font-weight: bold;"/>
   <text value="Panagiotis Astithas"/>
   <separator class="thin"/>
+  <text value="&iconsBy;" style="font-weight: bold;"/>
+  <text value="The Tango Desktop Project" class="url"
+      onclick="window.open('http://tango.freedesktop.org/'); window.close();"/>
+  <separator class="thin"/>
   <text value="&homepage;" style="font-weight: bold;"/>
   <text value="http://github.com/past/despin" class="url"
       onclick="window.open('http://github.com/past/despin'); window.close();"/>
