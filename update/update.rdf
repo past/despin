@@ -15,7 +15,7 @@
                    em:minVersion="3.5"
                    em:maxVersion="3.5.*"
                    em:updateLink="http://past.github.com/despin/update/despin-0.1.xpi"
-                   em:updateHash="sha1:50aee899b254d2e82e5548e2b77d314493041401"
+                   em:updateHash="sha1:2f3ca51bcd5d7fc3449621f61adea765a6b79d2d"
                    em:updateInfoURL="http://past.github.com/despin/update/updateinfo0.1.xhtml" />
   <RDF:Seq RDF:about="rdf:#$txuJC1">
     <RDF:li RDF:resource="rdf:#$uxuJC1"/>
