@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
+         xmlns:NC="http://home.netscape.com/NC-rdf#"
+         xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <RDF:Description RDF:about="rdf:#$uxuJC1"
+                   em:version="0.1">
+    <em:targetApplication RDF:resource="rdf:#$xxuJC1"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="urn:mozilla:extension:despin@astithas.com"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBAJOrlgM8evjqSTrWFURH0kE9bdVxWMpaj4O7u+V42pndb8sp3AcFILxHl8CpHh0PVl0PEYEvacznDb9qx4s5VS1vwH/L2M28IKgWy7e/orm9m2xJaEiN8YrZWUBZNSyLxSot/F+BdR2oMIkSkk68XIi4dy3DHPiL/upeHzoShy3B">
+    <em:updates RDF:resource="rdf:#$txuJC1"/>
+  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$xxuJC1"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:minVersion="3.5"
+                   em:maxVersion="3.5.*"
+                   em:updateLink="http://past.github.com/despin/update/despin-0.1.xpi"
+                   em:updateHash="sha1:50aee899b254d2e82e5548e2b77d314493041401"
+                   em:updateInfoURL="http://past.github.com/despin/update/updateinfo0.1.xhtml" />
+  <RDF:Seq RDF:about="rdf:#$txuJC1">
+    <RDF:li RDF:resource="rdf:#$uxuJC1"/>
+  </RDF:Seq>
+</RDF:RDF>

@@ -2,10 +2,6 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Description RDF:about="rdf:#$uSYcA1"
-                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
-                   em:minVersion="3.0"
-                   em:maxVersion="3.5.*" />
   <RDF:Description RDF:about="urn:mozilla:install-manifest"
                    em:id="despin@astithas.com"
                    em:name="Despin"
@@ -15,7 +11,13 @@
                    em:homepageURL="http://github.com/past/despin/"
                    em:aboutURL="chrome://despin/content/about.xul"
                    em:optionsURL="chrome://despin/content/options.xul"
-                   em:iconURL="chrome://despin/skin/logo-32.png">
+                   em:updateURL="http://past.github.com/despin/update/update.rdf"
+                   em:iconURL="chrome://despin/skin/logo-32.png"
+                   em:updateKey="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDXXcAEfbASqcPVYHNlXqioO7bMkxt6BS2yUorsYrqsnEQlx2rE1LyiKNR6t4JBXmkLm1Xu6VKcbojTA6lMESNZwUo6PoySnN2k4A2Hty/b4CgjOc8d7etJndU59v2x8rSeWnN61t12yQRWvEdU3MFFieQS3aCVWdXy4MRmBWXMJQIDAQAB">
     <em:targetApplication RDF:resource="rdf:#$uSYcA1"/>
   </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$uSYcA1"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:minVersion="3.5"
+                   em:maxVersion="3.5.*" />
 </RDF:RDF>
