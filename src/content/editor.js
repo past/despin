@@ -59,5 +59,11 @@ Editor.prototype = {
 
   save: function () {
     FileIO.write(this.fullPath, this._component.getContent(), 'w', this.CHARSET);
+  },
+  
+  saveAs: function (path) {    
+    var newFile = FileIO.open(path);
+    FileIO.write(newFile, this._component.getContent(), 'w', this.CHARSET);
+    this.filename = path;
   }
 };
