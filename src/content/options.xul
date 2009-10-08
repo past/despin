@@ -10,11 +10,51 @@
   <prefpane id="prefPane">
     <preferences>
       <preference id="saveOnClose" name="extensions.despin.saveOnClose" type="bool"/>
+      <preference id="autoindent" name="extensions.despin.autoindent" type="bool"/>
+      <preference id="codecomplete" name="extensions.despin.codecomplete" type="bool"/>
+      <preference id="smartmove" name="extensions.despin.smartmove" type="bool"/>
+      <preference id="highlightline" name="extensions.despin.highlightline" type="bool"/>
+      <preference id="strictlines" name="extensions.despin.strictlines" type="bool"/>
+      <preference id="syntaxcheck" name="extensions.despin.syntaxcheck" type="bool"/>
+      <preference id="tabsize" name="extensions.despin.tabsize" type="int"/>
+      <preference id="tabmode" name="extensions.despin.tabmode" type="bool"/>
+      <preference id="tabshowspace" name="extensions.despin.tabshowspace" type="bool"/>
+      <preference id="tabarrow" name="extensions.despin.tabarrow" type="bool"/>
+      <preference id="theme" name="extensions.despin.theme" type="string"/>
+      <preference id="trimonsave" name="extensions.despin.trimonsave" type="bool"/>
     </preferences>
 
-    <hbox align="start">
+    <vbox align="start">
       <checkbox id="saveOnClose" preference="saveOnClose" label="&saveOnClose;"/>
-    </hbox>
+      <checkbox id="autoindent" preference="autoindent" label="&autoindent;"/>
+      <checkbox id="codecomplete" preference="codecomplete" label="&codecomplete;"/>
+      <checkbox id="smartmove" preference="smartmove" label="&smartmove;"/>
+      <checkbox id="highlightline" preference="highlightline" label="&highlightline;"/>
+      <checkbox id="strictlines" preference="strictlines" label="&strictlines;"/>
+      <checkbox id="syntaxcheck" preference="syntaxcheck" label="&syntaxcheck;"/>
+      <hbox align="center">
+        <label value="&tabsize;" control="tabsize"/>
+        <textbox type="number" min="1" max="100" size="3" id="tabsize" preference="tabsize" label="&tabsize;"/>
+      </hbox>
+      <checkbox id="tabmode" preference="tabmode" label="&tabmode;"/>
+      <checkbox id="tabshowspace" preference="tabshowspace" label="&tabshowspace;"/>
+      <checkbox id="tabarrow" preference="tabarrow" label="&tabarrow;"/>
+      <hbox align="center">
+        <label value="&theme;" control="thememenulist"/>
+        <menulist id="thememenulist" preference="theme">
+            <menupopup>
+                <menuitem label="&coffee;" value="coffee"/>
+                <menuitem label="&white;" value="white"/>
+                <menuitem label="&black;" value="black"/>
+                <menuitem label="&pastels;" value="pastels"/>
+                <menuitem label="&whitezebra;" value="whitezebra"/>
+                <menuitem label="&blackzebra;" value="blackzebra"/>
+                <menuitem label="&pastelszebra;" value="pastelszebra"/>
+            </menupopup>
+        </menulist>
+      </hbox>
+      <checkbox id="trimonsave" preference="trimonsave" label="&trimonsave;"/>
+    </vbox>
 
   </prefpane>
 </prefwindow>

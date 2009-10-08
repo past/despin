@@ -24,24 +24,25 @@ Editor.prototype = {
     return this.filename.substring(i+1, this.filename.length);
   },
 
-  initUI: function (divId, window) {
+  initUI: function (divId, window, prefs) {
     // Loads and configures the objects that the editor needs
     this._component = new bespin.editor.Component(
         divId,
         {language: this.extension,
          loadfromdiv: false,
          set: {
-           autoindent: 'on',
-           codecomplete: 'on',
-           highlightline: 'on',
-           smartmove: 'on',
-           strictlines: 'on',
-           syntaxcheck: 'on',
-           tabsize: 4,
-           tabmode: 'spaces',
-           tabshowspace: 'off',
-           tabarrow: 'on',
-           trimonsave: 'on'
+           autoindent: prefs.autoindent,
+           codecomplete: prefs.codecomplete,
+           highlightline: prefs.highlightline,
+           smartmove: prefs.smartmove,
+           strictlines: prefs.strictlines,
+           syntaxcheck: prefs.syntaxcheck,
+           tabsize: prefs.tabsize,
+           tabmode: prefs.tabmode,
+           tabshowspace: prefs.tabshowspace,
+           tabarrow: prefs.tabarrow,
+           theme: prefs.theme,
+           trimonsave: prefs.trimonsave
          }
         });
     this._component.setContent(this.load());

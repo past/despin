@@ -22,17 +22,31 @@ if (!commands) commands = {};
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 
+commands.prefs = {};
+
 commands.onLoad = function () {
     // Register to receive notifications of preference changes
     var prefs = Cc["@mozilla.org/preferences-service;1"]
         .getService(Ci.nsIPrefService).getBranch("extensions.despin.");
     prefs.QueryInterface(Ci.nsIPrefBranch2);
     prefs.addObserver("", this, false);
-
-    commands.saveOnClose = prefs.getBoolPref("saveOnClose");
+    // Read the application preferences.
+    commands.prefs.saveOnClose = prefs.getBoolPref("saveOnClose");
+    commands.prefs.autoindent = prefs.getBoolPref("autoindent") ? 'on' : 'off';
+    commands.prefs.codecomplete = prefs.getBoolPref("codecomplete") ? 'on' : 'off';
+    commands.prefs.highlightline = prefs.getBoolPref("highlightline") ? 'on' : 'off';
+    commands.prefs.smartmove = prefs.getBoolPref("smartmove") ? 'on' : 'off';
+    commands.prefs.strictlines = prefs.getBoolPref("strictlines") ? 'on' : 'off';
+    commands.prefs.syntaxcheck = prefs.getBoolPref("syntaxcheck") ? 'on' : 'off';
+    commands.prefs.tabsize = prefs.getIntPref("tabsize");
+    commands.prefs.tabmode = prefs.getBoolPref("tabmode") ? 'spaces' : 'tabs';
+    commands.prefs.tabshowspace = prefs.getBoolPref("tabshowspace") ? 'on' : 'off';
+    commands.prefs.tabarrow = prefs.getBoolPref("tabarrow") ? 'on' : 'off';
+    commands.prefs.theme = prefs.getCharPref("theme");
+    commands.prefs.trimonsave = prefs.getBoolPref("trimonsave") ? 'on' : 'off';
 
     $("#open").click(function(event) {
-	commands.open();
+        commands.open();
     });
     $("#save").click(function(event) {
 	commands.save();
@@ -75,6 +89,42 @@ commands.observe = function (subject, topic, data) {
         else
             this.removeAutoSave();
         break;
+    case "autoindent":
+        this.prefs.autoindent = prefs.getBoolPref("autoindent") ? 'on' : 'off';
+        break;
+    case "codecomplete":
+        this.prefs.codecomplete = prefs.getBoolPref("codecomplete") ? 'on' : 'off';
+        break;
+    case "highlightline":
+        this.prefs.highlightline = prefs.getBoolPref("highlightline") ? 'on' : 'off';
+        break;
+    case "smartmove":
+        this.prefs.smartmove = prefs.getBoolPref("smartmove") ? 'on' : 'off';
+        break;
+    case "strictlines":
+        this.prefs.strictlines = prefs.getBoolPref("strictlines") ? 'on' : 'off';
+        break;
+    case "syntaxcheck":
+        this.prefs.syntaxcheck = prefs.getBoolPref("syntaxcheck") ? 'on' : 'off';
+        break;
+    case "tabmode":
+        this.prefs.tabmode = prefs.getBoolPref("tabmode") ? 'spaces' : 'tabs';
+        break;
+    case "tabsize":
+        this.prefs.tabsize = prefs.getIntPref("tabsize");
+        break;
+    case "tabshowspace":
+        this.prefs.autoindent = prefs.getBoolPref("tabshowspace") ? 'on' : 'off';
+        break;
+    case "tabarrow":
+        this.prefs.tabarrow = prefs.getBoolPref("tabarrow") ? 'on' : 'off';
+        break;
+    case "trimonsave":
+        this.prefs.trimonsave = prefs.getBoolPref("trimonsave") ? 'on' : 'off';
+        break;
+    case "theme":
+        this.prefs.theme = prefs.getCharPref("theme");
+        break;
     }
 }
 
@@ -85,7 +135,7 @@ commands.open = function () {
     var result = picker.show();
 
     if (result == nsIFilePicker.returnOK) {
-	    commands.load(picker.file.path);
+        commands.load(picker.file.path);
     }
 
     return result == nsIFilePicker.returnOK;
@@ -126,7 +176,7 @@ commands.load = function (path) {
     commands.editor = editor;
     
     document.title = filename + " (" + path + ")";
-    editor.initUI('editor', window);
+    editor.initUI('editor', window, commands.prefs);
 }
 
 commands.resize = function () {
