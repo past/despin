@@ -118,6 +118,9 @@ commands.load = function (path) {
     else
         separator = path.lastIndexOf('/');
     var filename = (separator === -1) ? path : path.substring(separator + 1, path.length);
+    // Save the current file before opening the new one.
+    if (commands.saveOnClose && commands.editor)
+        commands.editor.save();
     var editor = new Editor(path);
     // Store the reference to the editor.
     commands.editor = editor;
