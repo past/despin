@@ -3,7 +3,7 @@ function loadDespin() {
     newTab.label = "Despin";
     gBrowser.selectedTab = newTab;
     setTimeout(function () {
-	gBrowser.setIcon(newTab, "chrome://despin/skin/logo.png");
+        gBrowser.setIcon(newTab, "chrome://despin/skin/logo.png");
     }, 500);
 }
 
