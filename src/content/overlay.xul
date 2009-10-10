@@ -14,7 +14,7 @@
     </menupopup>
 
     <toolbarpalette id="BrowserToolbarPalette">
-	<toolbarbutton id="despin-button" label="&menuLabel;" oncommand="loadDespin()" onclick="if (event.button == 1) loadDespin()" class="toolbarbutton-1 chromeclass-toolbar-additional" tooltiptext="$iconTip;"/>
+	<toolbarbutton id="despin-button" label="&menuLabel;" oncommand="loadDespin()" onclick="if (event.button == 1) loadDespin()" class="toolbarbutton-1" tooltiptext="&iconTip;"/>
     </toolbarpalette>
     <statusbar id="status-bar">
 	<statusbarpanel id="despin-panel" onclick="loadDespin();">
