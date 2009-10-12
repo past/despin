@@ -158,7 +158,6 @@ commands.saveAs = function () {
 
 commands.print = function () {
     $("#printable-contents").html("<pre>" + commands.editor._component.getContent() + "</pre>");
-    alert(document.body.innerHTML);
     print();
 }
 
