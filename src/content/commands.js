@@ -64,8 +64,11 @@ commands.onLoad = function () {
         commands.showPreferences();
     });
     commands.resize();
-    // Open an empty scratchpad for starters.
-    commands.openScratchpad();
+    var filename = decodeURI(window.location.hash.slice(1));
+    if (filename)
+        commands.load(filename);
+    else
+        commands.openScratchpad();
     window.addEventListener("resize", commands.resize, false);
     window.addEventListener("unload", commands.onUnload, false);
     if (this.saveOnClose)
