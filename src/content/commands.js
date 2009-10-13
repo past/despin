@@ -161,7 +161,7 @@ commands.saveAs = function () {
 
 commands.print = function () {
     $("#printable-contents").html("<pre>" + commands.editor._component.getContent() + "</pre>");
-    print();
+    window.print();
 }
 
 commands.openScratchpad = function () {

@@ -39,6 +39,7 @@
       <checkbox id="tabmode" preference="tabmode" label="&tabmode;"/>
       <checkbox id="tabshowspace" preference="tabshowspace" label="&tabshowspace;"/>
       <checkbox id="tabarrow" preference="tabarrow" label="&tabarrow;"/>
+      <checkbox id="trimonsave" preference="trimonsave" label="&trimonsave;"/>
       <hbox align="center">
         <label value="&theme;" control="thememenulist"/>
         <menulist id="thememenulist" preference="theme" disabled="true">
@@ -53,7 +54,6 @@
             </menupopup>
         </menulist>
       </hbox>
-      <checkbox id="trimonsave" preference="trimonsave" label="&trimonsave;"/>
     </vbox>
 
   </prefpane>
