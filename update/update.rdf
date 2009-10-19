@@ -2,9 +2,6 @@
 <RDF:RDF xmlns:em="http://www.mozilla.org/2004/em-rdf#"
          xmlns:NC="http://home.netscape.com/NC-rdf#"
          xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-  <RDF:Seq RDF:about="rdf:#$txuJC1">
-    <RDF:li RDF:resource="rdf:#$uxuJC1"/>
-  </RDF:Seq>
   <RDF:Description RDF:about="rdf:#$xxuJC1"
                    em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
                    em:minVersion="3.5"
@@ -12,12 +9,27 @@
                    em:updateLink="http://past.github.com/despin/update/despin-0.1.xpi"
                    em:updateHash="sha1:2f3ca51bcd5d7fc3449621f61adea765a6b79d2d"
                    em:updateInfoURL="http://past.github.com/despin/update/updateinfo0.1.xhtml" />
+  <RDF:Description RDF:about="urn:mozilla:extension:despin@astithas.com"
+                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBADAeio83t56kUt4olH4rLLaqy3L+t0wx8bzDZVS256BIHsnzDeYvsQunB+yrQHyCpb6ATQ2/Hn90dyjs0D1iflNspBYw0A5yutaYxLpSbHXWBfiM5UGNBVwXfRNqHfk1lRqxbQSkrdvHlcvTbatqu3hFkdWl06YAlWiECGlq92X+">
+    <em:updates RDF:resource="rdf:#$txuJC1"/>
+  </RDF:Description>
+  <RDF:Seq RDF:about="rdf:#$txuJC1">
+    <RDF:li RDF:resource="rdf:#$uxuJC1"/>
+    <RDF:li RDF:resource="rdf:#$uxuJC2"/>
+  </RDF:Seq>
+  <RDF:Description RDF:about="rdf:#$uxuJC2"
+                   em:version="0.2">
+    <em:targetApplication RDF:resource="rdf:#$xxuJC2"/>
+  </RDF:Description>
   <RDF:Description RDF:about="rdf:#$uxuJC1"
                    em:version="0.1">
     <em:targetApplication RDF:resource="rdf:#$xxuJC1"/>
   </RDF:Description>
-  <RDF:Description RDF:about="urn:mozilla:extension:despin@astithas.com"
-                   em:signature="MIGTMA0GCSqGSIb3DQEBDQUAA4GBABGYhq3iVnUdfcId8SIgRp1OMEs7phldj3PKtQWm1ugsm/wuQucpbz4jli/5c1CIaJYifVLuoWTrD4peVKj+NCDbsyy+RNY/JlM7n9DDd1KEzak43CqmfhRhpkb3Scp8uAxnjLAqPY13vWrmLmcBIJ/ApUEbezLhPSc4LuFDZ7ju">
-    <em:updates RDF:resource="rdf:#$txuJC1"/>
-  </RDF:Description>
+  <RDF:Description RDF:about="rdf:#$xxuJC2"
+                   em:id="{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+                   em:minVersion="3.5"
+                   em:maxVersion="3.5.*"
+                   em:updateLink="http://past.github.com/despin/update/despin-0.2.xpi"
+                   em:updateHash="sha1:fd5e67be393a4fdddd4def33c3319d4fe40f8d06"
+                   em:updateInfoURL="http://past.github.com/despin/update/updateinfo0.2.xhtml" />
 </RDF:RDF>
