@@ -5,7 +5,7 @@
     buttons="accept" xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 <groupbox align="center" orient="horizontal">
 <vbox>
-  <text value="&version; 0.1"/>
+  <text value="&version; 0.2"/>
   <separator class="thin"/>
   <text value="&createdBy;" style="font-weight: bold;"/>
   <text value="Panagiotis Astithas"/>
