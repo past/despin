@@ -26,11 +26,11 @@ Editor.prototype = {
 
   initUI: function (divId, window, prefs) {
     // Loads and configures the objects that the editor needs
-    this._component = new bespin.editor.Component(
-        divId,
-        {language: this.extension,
-         loadfromdiv: false,
-         set: {
+    this._component = tiki.require("bespin:embed").useBespin("editor", {
+      stealFocus: true,
+      language: this.extension,
+      loadfromdiv: false,
+      settings: {
            autoindent: prefs.autoindent,
            codecomplete: prefs.codecomplete,
            highlightline: prefs.highlightline,
@@ -41,10 +41,10 @@ Editor.prototype = {
            tabmode: prefs.tabmode,
            tabshowspace: prefs.tabshowspace,
            tabarrow: prefs.tabarrow,
-           theme: prefs.theme,
+          // theme: prefs.theme,
            trimonsave: prefs.trimonsave
-         }
-        });
+      }
+    });
     this._component.setContent(this.load());
   },
 
