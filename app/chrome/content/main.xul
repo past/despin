@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<window id="main-window" title="Despin" width="800" height="600"
+        orient="vertical" windowtype="navigator:browser"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+        xmlns:html="http://www.w3.org/1999/xhtml"
+        persist="width height screenX screenY sizemode">
+
+    <script type="application/x-javascript" src="chrome://despinapp/content/main.js"/>
+<caption label="Hello World"/>
+
+    <vbox id="appcontent" flex="1">
+       <tabbrowser id="content" disablehistory="true" flex="1"/>
+    </vbox>
+    <statusbar id="status-bar" hidden="true">
+        <statusbarpanel id="statusbar-display" flex="1"/>
+    </statusbar>
+</window>
