@@ -22,17 +22,14 @@ const clh_category = "m-despin";
 /**
  * Opens a chrome window.
  * @param aChromeURISpec a string specifying the URI of the window to open.
- * @param aArgument an argument to pass to the window (may be null)
  */
-function openWindow(aChromeURISpec, aArgument)
+function openWindow(aChromeURISpec)
 {
   var ww = Components.classes["@mozilla.org/embedcomp/window-watcher;1"].
     getService(Components.interfaces.nsIWindowWatcher);
-  var features = "chrome,menubar,toolbar,status,resizable,dialog=no,height=600,width=800";
-  var path = aArgument? aChromeURISpec+'#'+aArgument.path: aChromeURISpec;
-  ww.openWindow(null, path, "_blank",
+  ww.openWindow(null, aChromeURISpec, "_blank",
                 "chrome,menubar,toolbar,status,resizable,dialog=no,height=600,width=800",
-                aArgument);
+                null);
 }
  
 /**
@@ -60,22 +57,17 @@ const myAppHandler = {
       if (uristr) {
         // convert uristr to an nsIURI
         var uri = cmdLine.resolveURI(uristr);
-        openWindow(CHROME_URI, uri);
+        openWindow(CHROME_URI+'#'+uri.path);
         cmdLine.preventDefault = true;
       }
-    }
-    catch (e) {
-      Components.utils.reportError("incorrect parameter passed to -edit on the command line.");
-    }
-
-    if (cmdLine.handleFlag("despin", false)) {
-      openWindow(CHROME_URI, null);
-      cmdLine.preventDefault = true;
+    } catch (e) {
+        // If no filename was specified, open a default Despin editor.
+        openWindow(CHROME_URI);
+        cmdLine.preventDefault = true;
     }
   },
 
-  helpInfo : "  -despin              Open Despin\n" +
-             "  -edit <uri>          View and edit the URI in Despin\n",
+  helpInfo : "  -edit [file]         Edit the file in Despin\n",
 
   /* nsIFactory */
 
