@@ -26,7 +26,7 @@ Editor.prototype = {
 
   initUI: function (divId, window, prefs) {
     // Loads and configures the objects that the editor needs
-    this._component = tiki.require("Embedded").useBespin("editor", {
+    this._component = tiki.require("Embedded").useBespin("edit", {
       stealFocus: true,
       language: this.extension,
       loadfromdiv: false,

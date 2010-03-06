@@ -2953,7 +2953,7 @@ tiki = tiki.require('tiki:loader').setup(tiki,
   ('undefined' === typeof ENV ? null : ENV),
   ('undefined' === typeof ARGV ? null : ARGV)) ;
 
-; tiki.script('tiki:en/9f76cda2d7e44b7acc4c94bb51f3277709b0cb56/javascript.js');tiki.stylesheet("sproutcore/testing:en/1e0d6dc675d3d9adb05a01b524dd7fc8fb2ad475/stylesheet.css");tiki.stylesheet("sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css");tiki.stylesheet("sproutcore/standard_theme:en/a56ea1a2b3ce510f45a5406d71a926f32602d18e/stylesheet.css");tiki.stylesheet("sproutcore/designer:en/c31f4a999b308340c034ef4ae90087615be810b2/stylesheet.css");tiki.stylesheet("sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css");/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('tiki:en/9f76cda2d7e44b7acc4c94bb51f3277709b0cb56/javascript.js');tiki.stylesheet("sproutcore/designer:en/1f37990cd851db9a2ee5c44d115f110d9ee2d4aa/stylesheet.css");tiki.stylesheet("sproutcore/testing:en/1e0d6dc675d3d9adb05a01b524dd7fc8fb2ad475/stylesheet.css");tiki.stylesheet("sproutcore/standard_theme:en/77378d526943ec81407cd7fc4d1ebdcc0eda3df4/stylesheet.css");tiki.stylesheet("sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css");tiki.stylesheet("sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css");/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/runtime', {
   "packages": {
     "tiki": {
@@ -2970,8 +2970,8 @@ tiki = tiki.require('tiki:loader').setup(tiki,
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-      "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+      "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+      "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
     }
   ]
 });
@@ -5693,7 +5693,37 @@ SC.Enumerable = {
     var ret = [];
     this.forEach(function(o) { ret.push(o); }, this);
     return ret ;
-  }        
+  },
+  
+  /**
+    Converts an enumerable into a matrix, with inner arrays grouped based 
+    on a particular property of the elements of the enumerable.
+
+    @params key {String} the property to test
+    @returns {Array} matrix of arrays
+  */        
+  groupBy: function(key){
+    var len = this.get ? this.get('length') : this.length,
+        ret = [],
+        last = null,
+        context = SC.Enumerator._popContext(),
+        grouped = [], 
+        keyValues = [];          
+    for(var idx=0;idx<len;idx++) {
+      var next = this.nextObject(idx, last, context) ;
+      var cur = next ? (next.get ? next.get(key) : next[key]) : null;
+      if(SC.none(grouped[cur])){ grouped[cur] = []; keyValues.push(cur); }
+      grouped[cur].push(next);
+      last = next;
+    }
+    last = null;
+    context = SC.Enumerator._pushContext(context);
+    
+    for(var idx=0,len2=keyValues.length; idx < len2; idx++){
+      ret.push(grouped[keyValues[idx]]);        
+    }
+    return ret ;
+  }
   
 } ;
 
@@ -5952,6 +5982,25 @@ Array.prototype.isEnumerable = true ;
       }
       return ret ;
     },    
+
+    //returns a matrix
+    groupBy: function(key) {
+      var len = this.length,
+          ret = [],
+          grouped = [], 
+          keyValues = [];          
+      for(var idx=0;idx<len;idx++) {
+        var next = this[idx] ;
+        var cur = next ? (next.get ? next.get(key) : next[key]) : null;
+        if(SC.none(grouped[cur])){ grouped[cur] = []; keyValues.push(cur); }
+        grouped[cur].push(next);
+      }
+      for(var idx=0,len2=keyValues.length; idx < len2; idx++){
+        ret.push(grouped[keyValues[idx]]);        
+      }
+      return ret ;
+    },    
+
     
     find: function(callback, target) {
       if (typeof callback !== "function") throw new TypeError() ;
@@ -6743,7 +6792,7 @@ SC.Observable = {
         cachedep, idx, dfunc, cache, func,
         log = SC.LOG_OBSERVERS && !(this.LOG_OBSERVING===false);
 
-    if (this._kvo_cacheable && (cache = this._kvo_cache)) {
+    if (cache = this._kvo_cache) {
 
       // clear any cached value
       if (!_keepCache) {
@@ -6753,18 +6802,20 @@ SC.Observable = {
         }
       }
 
-      // if there are any dependent keys and they use caching, then clear the
-      // cache.  This is the same code as is in set.  It is inlined for perf.
-      cachedep = this._kvo_cachedep;
-      if (!cachedep || (cachedep = cachedep[key])===undefined) {
-        cachedep = this._kvo_computeCachedDependentsFor(key);
-      }
+      if (this._kvo_cacheable) {
+        // if there are any dependent keys and they use caching, then clear the
+        // cache.  This is the same code as is in set.  It is inlined for perf.
+        cachedep = this._kvo_cachedep;
+        if (!cachedep || (cachedep = cachedep[key])===undefined) {
+          cachedep = this._kvo_computeCachedDependentsFor(key);
+        }
 
-      if (cachedep) {
-        idx = cachedep.length;
-        while(--idx>=0) {
-          dfunc = cachedep[idx];
-          cache[dfunc.cacheKey] = cache[dfunc.lastSetValueKey] = undefined;
+        if (cachedep) {
+          idx = cachedep.length;
+          while(--idx>=0) {
+            dfunc = cachedep[idx];
+            cache[dfunc.cacheKey] = cache[dfunc.lastSetValueKey] = undefined;
+          }
         }
       }
     }
@@ -7541,21 +7592,25 @@ SC.Observable = {
     Increments the value of a property.
     
     @param key {String} property name
+    @param increment {Number} the amount to increment (optional)
     @returns {Number} new value of property
   */
-  incrementProperty: function(key) { 
-    this.set(key,(this.get(key) || 0)+1); 
+  incrementProperty: function(key,increment) {
+    if (!increment) increment = 1;
+    this.set(key,(this.get(key) || 0)+increment); 
     return this.get(key) ;
   },
 
   /**  
-    decrements a property
+    Decrements the value of a property.
     
     @param key {String} property name
+    @param increment {Number} the amount to decrement (optional)
     @returns {Number} new value of property
   */
-  decrementProperty: function(key) {
-    this.set(key,(this.get(key) || 0) - 1 ) ;
+  decrementProperty: function(key,increment) {
+    if (!increment) increment = 1;
+    this.set(key,(this.get(key) || 0) - increment) ;
     return this.get(key) ;
   },
 
@@ -8079,14 +8134,19 @@ SC.ObserverSet = {
     Note: does not support context
   */
   invokeMethods: function() {
+    var key, value, idx, target, val;
+    
     // iterate through the set, look for sets.
-    for(var key in this) {
+    for(key in this) {
       if (!this.hasOwnProperty(key)) continue ;
-      var value = this[key] ;
+      value = this[key] ;
       if (value && value.isTargetSet) {
-        var idx = value.length;
-        var target = value.target ;
-        while(--idx>=0) value[idx].call(target);
+        idx = value.length;
+        target = value.target ;
+        while(--idx>=0) {
+          val = value[idx];
+          if(val) val.call(target);
+        }
       }
     }
   },
@@ -8601,7 +8661,7 @@ SC.Binding = {
       
     // connection is completed, disconnect.
     } else {
-      SC.Observers.removeObserver(this._fromPropertyPath, this, this.fromPropertyDidChange, this._fromRoot) ;
+      SC.Observers.removeObserver(this._fromPropertyPath, this, this.fromPropertyDidChange, (this._fromRoot || this._toRoot)) ;
       if (!this._oneWay) {
         SC.Observers.removeObserver(this._toPropertyPath, this, this.toPropertyDidChange, this._toRoot) ;
       }
@@ -8671,9 +8731,8 @@ SC.Binding = {
     var source = this._bindingSource,
         key    = this._bindingKey,
         v, idx;
-        
-    if (!source) return ; // nothing to do
-    this._bindingValue = v = source.getPath(key);
+    
+    this._bindingValue = v = (source ? source.getPath(key) : null);
     
     // apply any transforms to get the to property value also
     var transforms = this._transforms;
@@ -14093,14 +14152,14 @@ SC.SparseArray.array = function(len) {
   return this.create({ _length: len||0 });
 };
 ;});
-; tiki.script('sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/datastore', {
   "packages": {
     "sproutcore/runtime": {
       "scripts": [
         {
-          "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-          "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+          "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+          "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
         }
       ]
     },
@@ -14119,8 +14178,8 @@ SC.SparseArray.array = function(len) {
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/datastore/en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js",
-      "id": "sproutcore/datastore:en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js"
+      "url": "/static/sproutcore/datastore/en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js",
+      "id": "sproutcore/datastore:en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js"
     }
   ]
 });
@@ -14130,14 +14189,14 @@ tiki.module('sproutcore/datastore:index', function(require, exports, module) {
 var m;
 });
 
-; tiki.script('sproutcore/datastore:en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/datastore:en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/foundation', {
   "packages": {
     "sproutcore/runtime": {
       "scripts": [
         {
-          "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-          "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+          "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+          "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
         }
       ]
     },
@@ -14152,8 +14211,8 @@ var m;
   },
   "stylesheets": [
     {
-      "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css",
-      "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css"
+      "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css",
+      "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css"
     }
   ],
   "depends": [
@@ -14162,8 +14221,8 @@ var m;
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js",
-      "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js"
+      "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js",
+      "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js"
     }
   ]
 });
@@ -15322,9 +15381,17 @@ SC.ArrayController = SC.Controller.extend(SC.Array, SC.SelectionSupport,
     if (!func) {  
       len = orderBy.get('length');
       func = function(a,b) {
-        var idx=0, status=0, key, aValue, bValue;
+        var idx=0, status=0, key, aValue, bValue, descending;
         for(idx=0;(idx<len)&&(status===0);idx++) {
           key = orderBy.objectAt(idx);
+          descending = NO;
+          
+          if (key.indexOf('ASC') > -1) {
+            key = key.split('ASC ')[1];
+          } else if (key.indexOf('DESC') > -1) {
+            key = key.split('DESC ')[1];
+            descending = YES;
+          }
         
           if (!a) aValue = a ;
           else if (a.isObservable) aValue = a.get(key);
@@ -15335,8 +15402,9 @@ SC.ArrayController = SC.Controller.extend(SC.Array, SC.SelectionSupport,
           else bValue = b[key];
         
           status = SC.compare(aValue, bValue);
+          if (descending) status = (-1) * status;
         }
-        return status ; 
+        return status ;
       };
     }
 
@@ -15704,21 +15772,41 @@ SC.ObjectController = SC.Controller.extend(
   /** @private - setup observer on init if needed. */
   init: function() {
     arguments.callee.base.apply(this,arguments);
-    if (this.get('observableContent')) this._scoc_contentDidChange();
+    if (this.get('content')) this._scoc_contentDidChange();
+    if (this.get('observableContent')) this._scoc_observableContentDidChange();
   },
 
+  _scoc_contentDidChange: function () {
+    var last = this._scoc_content,
+        cur  = this.get('content');
+        
+    if (last !== cur) {
+      this._scoc_content = cur;
+      var func = this._scoc_enumerableContentDidChange;
+      if (last && last.isEnumerable) {
+        //console.log('no longer observing [] on last');
+        last.removeObserver('[]', this, func);
+      }
+      if (cur && cur.isEnumerable) {
+        //console.log('observing [] on cur');
+        cur.addObserver('[]', this, func);
+      }
+    }
+  }.observes("content"),
+  
   /**  @private
     
     Called whenever the observable content property changes.  This will setup
     observers on the content if needed.
   */
-  _scoc_contentDidChange: function() {
+  _scoc_observableContentDidChange: function() {
     var last = this._scoc_observableContent,
         cur  = this.get('observableContent'),
         func = this.contentPropertyDidChange,
         efunc= this._scoc_enumerableContentDidChange;
 
     if (last === cur) return this; // nothing to do
+    //console.log('observableContentDidChange');
     
     this._scoc_observableContent = cur; // save old content
     
@@ -17590,6 +17678,8 @@ SC.Button = {
         title = this.get('displayTitle') ,
         needsTitle = (!SC.none(title) && title.length>0),
         elem, htmlNode, imgTitle;
+        if(this.get('escapeHTML')) title = SC.RenderContext.escapeHTML(title) ;
+        
     // get the icon.  If there is an icon, then get the image and update it.
     // if there is no image element yet, create it and insert it just before
     // title.
@@ -17866,7 +17956,7 @@ SC.ContentDisplay = {
       this.allPropertiesDidChange() ;
       this.endPropertyChanges() ;
     }
-  }.observes('content'),
+  }.observes('content', 'contentDisplayProperties'),
   
   /** @private Invoked when properties on the content object change. */
   _display_contentPropertyDidChange: function(target, key, value, propertyRevision) {
@@ -17901,6 +17991,7 @@ SC.STRING_HUMANIZE_REGEXP = (/[\-_]/g);
 SC.STRING_TRIM_REGEXP = (/^\s+|\s+$/g);
 SC.STRING_TRIM_LEFT_REGEXP = (/^\s+/g);
 SC.STRING_TRIM_RIGHT_REGEXP = (/\s+$/g);
+SC.STRING_REGEXP_ESCAPED_REGEXP = (/([\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:])/g);
 
 /**
   @namespace
@@ -18105,6 +18196,19 @@ SC.String = {
   */
   humanize: function() {
     return this.decamelize().replace(SC.STRING_HUMANIZE_REGEXP,' ') ;
+  },
+  
+  /**
+    Will escape a string so it can be securely used in a regular expression.
+    
+    Useful when you need to use user input in a regular expression without
+    having to worry about it breaking code if any reserved regular expression 
+    characters are used.
+    
+    @returns {String} the string properly escaped for use in a regexp.
+  */
+  escapeForRegExp: function() {
+    return this.replace(SC.STRING_REGEXP_ESCAPED_REGEXP, "\\$1");
   },
   
   /**
@@ -18464,7 +18568,7 @@ SC.Control = {
   updatePropertyFromContent: function(prop, key, contentKey, content) {
     var all = key === '*';
     if (contentKey === undefined) {
-      contentKey = "content%@Key".fmt(prop.capitalize());
+      contentKey = "content"+prop.capitalize()+"Key";
     }
     if (content === undefined) content = this.get('content');
     
@@ -18500,9 +18604,8 @@ SC.Control = {
   updateContentWithValueObserver: function() {
     var key = this.contentValueKey ?
       this.get('contentValueKey') :
-      this.getDelegateProperty('contentValueKey', this.displayDelegate) ;
-    
-    var content = this.get('content') ;
+      this.getDelegateProperty('contentValueKey', this.displayDelegate),
+      content = this.get('content') ;
     if (!key || !content) return ; // do nothing if disabled
     
     // get value -- set on content if changed
@@ -18559,8 +18662,8 @@ SC.Control = {
     // if field label is not provided, compute something...
     fk = this.get('fieldKey') || this.constructor.toString() ;
     def = (fk || '').humanize().capitalize() ;
-    return "ErrorLabel.%@".fmt(fk)
-      .locWithDefault("FieldKey.%@".fmt(fk).locWithDefault(def)) ;
+    return "ErrorLabel."+fk
+      .locWithDefault(("FieldKey."+fk).locWithDefault(def)) ;
       
   }.property('fieldLabel','fieldKey').cacheable(),
 
@@ -18583,11 +18686,10 @@ SC.Control = {
     control CSS classes.
   */
   renderMixin: function(context, firstTime) {
-    var sel = this.get('isSelected'), disabled = !this.get('isEnabled');
-    
+    var sel = this.get('isSelected'), disabled = !this.get('isEnabled'),
     // update the CSS classes for the control.  note we reuse the same hash
     // to avoid consuming more memory
-    var names = this._CONTROL_TMP_CLASSNAMES ; // temporary object
+        names = this._CONTROL_TMP_CLASSNAMES ; // temporary object
     names.mixed = sel === SC.MIXED_STATE;
     names.sel = sel && (sel !== SC.MIXED_STATE) ;
     names.active = this.get('isActive') ;
@@ -18596,7 +18698,10 @@ SC.Control = {
     // if the control implements the $input() helper, then fixup the input
     // tags
     if (!firstTime && this.$input) {
-      this.$input().attr('disabled', disabled);
+      var inps = this.$input();
+      if(inps.attr('type')!=="radio"){
+        this.$input().attr('disabled', disabled);
+      }
     }
   },
   
@@ -18614,10 +18719,9 @@ SC.Control = {
     var content = this.get('content') ;
     if (this._control_content === content) return; // nothing changed
     
-    var f = this.contentPropertyDidChange ;
-    
+    var f = this.contentPropertyDidChange,
     // remove an observer from the old content if necessary
-    var old = this._control_content ;
+        old = this._control_content ;
     if (old && old.removeObserver) old.removeObserver('*', this, f) ;
     
     // add observer to new content if necessary.
@@ -22048,19 +22152,20 @@ SC.Cursor = SC.Object.extend(
     
     // create a unique style rule and add it to the shared cursor style sheet
     var cursorStyle = this.get('cursorStyle') || SC.DEFAULT_CURSOR ,
-        ss = this.constructor.sharedStyleSheet() ;
+        ss = this.constructor.sharedStyleSheet(),
+        guid = SC.guidFor(this);
     
     if (ss.insertRule) { // WC3
       ss.insertRule(
-        '.%@ {cursor: %@;}'.fmt(SC.guidFor(this), cursorStyle),
+        '.'+guid+' {cursor: '+cursorStyle+';}',
         ss.cssRules ? ss.cssRules.length : 0
       ) ;
     } else if (ss.addRule) { // IE
-      ss.addRule('.'+SC.guidFor(this), 'cursor: '+cursorStyle) ;
+      ss.addRule('.'+guid, 'cursor: '+cursorStyle) ;
     }
     
     this.cursorStyle = cursorStyle ;
-    this.className = SC.guidFor(this) ; // used by cursor clients...
+    this.className = guid ; // used by cursor clients...
     return this ;
   },
   
@@ -22192,6 +22297,8 @@ SC.Responder = SC.Object.extend( /** SC.Responder.prototype */ {
     Set to YES if your view is willing to accept first responder status.  This is used when calculcating key responder loop.
   */
   acceptsFirstResponder: YES,
+  
+  becomingFirstResponder: NO,
   
   /** 
     Call this method on your view or responder to make it become first 
@@ -22327,6 +22434,18 @@ SC.ANCHOR_CENTER = { centerX: 0, centerY: 0 };
 */
 
 SC.LAYOUT_AUTO = 'auto';
+
+/**
+  Default property to disable or enable by default the contextMenu
+*/
+SC.CONTEXT_MENU_ENABLED = YES;
+
+/**
+  Default property to disable or enable if the focus can jump to the address
+  bar or not.
+*/
+SC.TABBING_ONLY_INSIDE_DOCUMENT = YES;
+
 
 /** @private - custom array used for child views */
 SC.EMPTY_CHILD_VIEWS_ARRAY = [];
@@ -22492,6 +22611,14 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     if the view until the view becomes visible in the window.
   */
   isVisibleInWindow: NO,
+  
+  /**
+   By default we don't disable the context menu. Overriding this property
+   can enable/disable the context menu per view.
+  */
+  isContextMenuEnabled: function() {
+    return SC.CONTEXT_MENU_ENABLED;
+  }.property(),
   
   /**
     Recomputes the isVisibleInWindow property based on the visibility of the 
@@ -22768,13 +22895,16 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     views, and so on.
   */
   _invalidatePaneCacheForSelfAndAllChildViews: function () {
+    var childView, childViews = this.get('childViews'),
+        len = childViews.length, idx ;
+        
     this.notifyPropertyChange('pane');
     
-    var childViews = this.get('childViews'),
-        len = childViews.length, idx ;
     for (idx=0; idx<len; ++idx) {
-      var childView = childViews[idx];
-      if (childView._invalidatePaneCacheForSelfAndAllChildViews) childView._invalidatePaneCacheForSelfAndAllChildViews();
+      childView = childViews[idx];
+      if (childView._invalidatePaneCacheForSelfAndAllChildViews) {
+        childView._invalidatePaneCacheForSelfAndAllChildViews();
+      } 
     }
   },
   
@@ -23002,7 +23132,9 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
       }
     }
     if (this.didUpdateLayer) this.didUpdateLayer(); // call to update DOM
-    if(this.designer && this.designer.viewDidUpdateLayer) this.designer.viewDidUpdateLayer(); //let the designer know
+    if(this.designer && this.designer.viewDidUpdateLayer) {
+      this.designer.viewDidUpdateLayer(); //let the designer know
+    }
     return this ;
   },
   
@@ -23140,7 +23272,7 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     @returns {void}
   */
   prepareContext: function(context, firstTime) {
-    var mixins, len, idx, layerId, bgcolor, cursor ;
+    var mixins, len, idx, layerId, bgcolor, cursor, classArray=[];
     
     // do some initial setup only needed at create time.
     if (firstTime) {
@@ -23155,16 +23287,18 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     }
     
     // do some standard setup...
-    if (this.get('isTextSelectable')) context.addClass('allow-select') ;
-    if (!this.get('isEnabled')) context.addClass('disabled') ;
-    if (!this.get('isVisible')) context.addClass('hidden') ;
-    if (this.get('isFirstResponder')) context.addClass('focus');
+    if (this.get('isTextSelectable')) classArray.push('allow-select') ;
+    if (!this.get('isEnabled')) classArray.push('disabled') ;
+    if (!this.get('isVisible')) classArray.push('hidden') ;
+    if (this.get('isFirstResponder')) classArray.push('focus');
     
     bgcolor = this.get('backgroundColor');
     if (bgcolor) context.addStyle('backgroundColor', bgcolor);
     
     cursor = this.get('cursor') ;
-    if (cursor) context.addClass(cursor.get('className')) ;
+    if (cursor) classArray.push(cursor.get('className')) ;
+    
+    context.addClass(classArray);
     
     this.beginPropertyChanges() ;
     this.set('layerNeedsUpdate', NO) ;
@@ -23370,11 +23504,12 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
       if (!node) {
         this.createLayer() ;
         node = this.get('layer') ;
+        if (!node) return; // can't do anything without a node.
       }
       
-      var siblings = parentView.get('childViews') ;
-      var nextView = siblings.objectAt(siblings.indexOf(this)+1) ;
-      var nextNode = (nextView) ? nextView.get('layer') : null ;
+      var siblings = parentView.get('childViews'),
+          nextView = siblings.objectAt(siblings.indexOf(this)+1),
+          nextNode = (nextView) ? nextView.get('layer') : null ;
       
       // before we add to parent node, make sure that the nextNode exists...
       if (nextView && (!nextNode || nextNode.parentNode!==parentNode)) {
@@ -23425,18 +23560,24 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
   isKeyResponder: NO,
 
   /**
-    This method is invoked just before you lost the key responder status.  The passed view is the view that is about to gain keyResponder status.  This gives you a chance to do any early setup.
-    
-    Remember that you can gain/lose key responder status either because another view in the same pane is becoming first responder or because another pane is about to become key.
+    This method is invoked just before you lost the key responder status.  
+    The passed view is the view that is about to gain keyResponder status.  
+    This gives you a chance to do any early setup. Remember that you can 
+    gain/lose key responder status either because another view in the same 
+    pane is becoming first responder or because another pane is about to 
+    become key.
     
     @param {SC.Responder} responder
   */
   willLoseKeyResponderTo: function(responder) {},
   
   /**
-    This method is invoked just before you become the key responder.  The passed view is the view that is about to lose keyResponder status.  You can use this to do any setup before the view changes.
-    
-    Remember that you can gain/lose key responder status either because another view in the same pane is becoming first responder or because another pane is about to become key.
+    This method is invoked just before you become the key responder.  The 
+    passed view is the view that is about to lose keyResponder status.  You 
+    can use this to do any setup before the view changes.
+    Remember that you can gain/lose key responder status either because 
+    another view in the same pane is becoming first responder or because 
+    another pane is about to become key.
     
     @param {SC.Responder} responder
   */
@@ -23453,7 +23594,11 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
   didBecomeKeyResponderFrom: function(responder) {},
     
   /**
-    This method will process a key input event, attempting to convert it to an appropriate action method and sending it up the responder chain.  The event is converted using the SC.KEY_BINDINGS hash, which maps key events into method names.  If no key binding is found, then the key event will be passed along using an insertText() method.
+    This method will process a key input event, attempting to convert it to 
+    an appropriate action method and sending it up the responder chain.  The 
+    event is converted using the SC.KEY_BINDINGS hash, which maps key events 
+    into method names.  If no key binding is found, then the key event will 
+    be passed along using an insertText() method.
     
     @param {SC.Event} event
     @returns {Object} object that handled event, if any
@@ -23487,7 +23632,9 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
   },
   
   /**
-    This method is invoked by interpretKeyEvents() when you receive a key event matching some plain text.  You can use this to actually insert the text into your application, if needed.
+    This method is invoked by interpretKeyEvents() when you receive a key 
+    event matching some plain text.  You can use this to actually insert the 
+    text into your application, if needed.
     
     @param {SC.Event} event
     @returns {Object} receiver or object that handled event
@@ -23539,6 +23686,9 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     var seen = [],
         rootView = this.pane(), ret; 
     ret = rootView._computeNextValidKeyView(this, seen);
+    if(SC.TABBING_ONLY_IN_DOCUMENT && SC.ret === null){
+      ret = rootView._computeNextValidKeyView(rootView, seen);
+    }
     return ret ;
   }.property('nextKeyView'),
   
@@ -23852,7 +24002,6 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
         }
       }
     }
-    
     // now set adjusted layout
     if (didChange) this.set('layout', layout) ;
     
@@ -24033,107 +24182,141 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
   computeFrameWithParentFrame: function(pdim) {
     var layout = this.get('layout'),
         f = {} , error, layer, AUTO = SC.LAYOUT_AUTO,
-        stLayout = this.get('useStaticLayout') ;
+        stLayout = this.get('useStaticLayout'),
+        dH, dW, //shortHand for parentDimensions
+        lR = layout.right, 
+        lL = layout.left, 
+        lT = layout.top, 
+        lB = layout.bottom, 
+        lW = layout.width, 
+        lH = layout.height, 
+        lcX = layout.centerX, 
+        lcY = layout.centerY;
     
-    if (layout.width !== undefined &&
-        layout.width === SC.LAYOUT_AUTO &&
+    if (lW !== undefined &&
+        lW === SC.LAYOUT_AUTO &&
         stLayout !== undefined && !stLayout) {
-     error = SC.Error.desc("%@.layout() you cannot use width:auto if staticLayout is disabled".fmt(this),"%@".fmt(this), -1) ;
+     error = SC.Error.desc("%@.layout() you cannot use width:auto if "+
+              "staticLayout is disabled".fmt(this),"%@".fmt(this), -1) ;
      console.error(error.toString()) ;
      throw error ;
     }
     
-    if (layout.height !== undefined &&
-        layout.height === SC.LAYOUT_AUTO &&
+    if (lH !== undefined &&
+        lH === SC.LAYOUT_AUTO &&
         stLayout !== undefined && !stLayout) {
-      error = SC.Error.desc("%@.layout() you cannot use height:auto if staticLayout is disabled".fmt(this),"%@".fmt(this), -1) ;
+      error = SC.Error.desc("%@.layout() you cannot use height:auto if "+
+              "staticLayout is disabled".fmt(this),"%@".fmt(this), -1) ;
       console.error(error.toString())  ;
       throw error ;
     }
     
     if (stLayout) return null; // can't compute
+
+    if (!pdim) pdim = this.computeParentDimensions(layout) ;
+    dH = pdim.height;
+    dW = pdim.width;
+    
     
     // handle left aligned and left/right 
-    if (!SC.none(layout.left)) {
-      f.x = Math.floor(layout.left) ;
-      if (layout.width !== undefined) {
-        if(layout.width === AUTO) f.width = AUTO ;
-        else f.width = Math.floor(layout.width) ;
-      } else { // better have layout.right!
-        if (!pdim) pdim = this.computeParentDimensions(layout) ;
-        f.width = Math.floor(pdim.width - f.x - (layout.right || 0)) ;
+    if (!SC.none(lL)) {
+      if(SC.isPercentage(lL)){
+        f.x = dW*lL;
+      }else{
+        f.x = lL ;
       }
-      
+      if (lW !== undefined) {
+        if(lW === AUTO) f.width = AUTO ;
+        else if(SC.isPercentage(lW)) f.width = dW*lW ;
+        else f.width = lW ;
+      } else { // better have lR!
+        f.width = dW - f.x ;
+        if(lR && SC.isPercentage(lR)) f.width = f.width - (lR*dW) ;
+        else f.width = f.width - (lR || 0) ;
+      }
     // handle right aligned
-    } else if (!SC.none(layout.right)) {
-      if (!pdim) pdim = this.computeParentDimensions(layout) ;
-      if (SC.none(layout.width)) {
-        f.width = pdim.width - layout.right ;
+    } else if (!SC.none(lR)) {
+      if (SC.none(lW)) {
+        if (SC.isPercentage(lL)) f.width = dW - (dW*lR) ;
+        else f.width = dW - lR ;
         f.x = 0 ;
       } else {
-        if(layout.width === AUTO) f.width = AUTO ;
-        else f.width = Math.floor(layout.width || 0) ;
-        f.x = Math.floor(pdim.width - layout.right - f.width) ;
+        if(lW === AUTO) f.width = AUTO ;
+        else if(SC.isPercentage(lW)) f.width = dW*lW ;
+        else f.width = (lW || 0) ;
+        if (SC.isPercentage(lW)) f.x = dW - (lR*dW) - f.width ;
+        else f.x = dW - lR - f.width ;
       }
       
     // handle centered
-    } else if (!SC.none(layout.centerX)) {
-      if (!pdim) pdim = this.computeParentDimensions(layout) ; 
-      if(layout.width === AUTO) f.width = AUTO ;
-      else f.width = Math.floor(layout.width || 0) ;
-      f.x = Math.floor((pdim.width - f.width)/2 + layout.centerX) ;
+    } else if (!SC.none(lcX)) {
+      if(lW === AUTO) f.width = AUTO ;
+      else if (SC.isPercentage(lW)) f.width = lW*dW ;
+      else f.width = (lW || 0) ;
+      if(SC.isPercentage(lcX)) f.x = (dW - f.width)/2 + (lcX*dW) ;
+      else f.x = (dW - f.width)/2 + lcX ;
     } else {
       f.x = 0 ; // fallback
-      if (SC.none(layout.width)) {
-        if (!pdim) pdim = this.computeParentDimensions(layout) ;
-        f.width = Math.floor(pdim.width) ;
+      if (SC.none(lW)) {
+        f.width = dW ;
       } else {
-        if(layout.width === AUTO) f.width = AUTO ;
-        else f.width = Math.floor(layout.width || 0) ;
+        if(lW === AUTO) f.width = AUTO ;
+        if (SC.isPercentage(lW)) f.width = lW*dW ;
+        else f.width = (lW || 0) ;
       }
     }
     
     // handle top aligned and top/bottom 
-    if (!SC.none(layout.top)) {
-      f.y = Math.floor(layout.top) ;
-      if (layout.height !== undefined) {
-        if(layout.height === AUTO) f.height = AUTO ;
-        else f.height = Math.floor(layout.height) ;
-      } else { // better have layout.bottm!
-        if (!pdim) pdim = this.computeParentDimensions(layout) ;
-        f.height = Math.floor(pdim.height - f.y - (layout.bottom || 0)) ;
+    if (!SC.none(lT)) {
+      if(SC.isPercentage(lT)) f.y = lT*dH ;
+      else f.y = lT ;
+      if (lH !== undefined) {
+        if(lH === AUTO) f.height = AUTO ;
+        else if(SC.isPercentage(lH)) f.height = lH*dH ;
+        else f.height = lH ;
+      } else { // better have lB!
+        if(lB && SC.isPercentage(lB)) f.height = dH - f.y - (lB*dH) ;
+        else f.height = dH - f.y - (lB || 0) ;
       }
       
     // handle bottom aligned
-    } else if (!SC.none(layout.bottom)) {
-      if (!pdim) pdim = this.computeParentDimensions(layout) ;
-      if (SC.none(layout.height)) {
-        f.height = pdim.height - layout.bottom ;
+    } else if (!SC.none(lB)) {
+      if (SC.none(lH)) {
+        if (SC.isPercentage(lB)) f.height = dH - (lB*dH) ;
+        else f.height = dH - lB ;
         f.y = 0 ;
       } else {
-        if(layout.height === AUTO) f.height = AUTO ;
-        else f.height = Math.floor(layout.height || 0) ;
-        f.y = Math.floor(pdim.height - layout.bottom - f.height) ;
+        if(lH === AUTO) f.height = AUTO ;
+        if (lH && SC.isPercentage(lH)) f.height = lH*dH ;
+        else f.height = (lH || 0) ;
+        if (SC.isPercentage(lB)) f.y = dH - (lB*dH) - f.height ;
+        else f.y = dH - lB - f.height ;
       }
       
     // handle centered
-    } else if (!SC.none(layout.centerY)) {
-      if (!pdim) pdim = this.computeParentDimensions(layout) ; 
-      if(layout.height === AUTO) f.height = AUTO ;
-      else f.height = Math.floor(layout.height || 0) ;
-      f.y = Math.floor((pdim.height - f.height)/2 + layout.centerY) ;
+    } else if (!SC.none(lcY)) {
+      if(lH === AUTO) f.height = AUTO ;
+      if (lH && SC.isPercentage(lH)) f.height = lH*dH ;
+      else f.height = (lH || 0) ;
+      if (SC.isPercentage(lcY)) f.y = (dH - f.height)/2 + (lcY*dH) ;
+      else f.y = (dH - f.height)/2 + lcY ;
       
     // fallback
     } else {
       f.y = 0 ; // fallback
-      if (SC.none(layout.height)) {
-        if (!pdim) pdim = this.computeParentDimensions(layout) ; 
-        f.height = Math.floor(pdim.height) ;
+      if (SC.none(lH)) {
+        f.height = dH ;
       } else {
-        if(layout.height === AUTO) f.height = AUTO ;
-        else f.height = Math.floor(layout.height || 0) ;
+        if(lH === AUTO) f.height = AUTO ;
+        if (SC.isPercentage(lH)) f.height = lH*dH ;
+        else f.height = lH || 0 ;
       }
     }
+    
+    f.x = Math.floor(f.x);
+    f.y = Math.floor(f.y);
+    if(f.height !== AUTO) f.height = Math.floor(f.height);
+    if(f.width !== AUTO) f.width = Math.floor(f.width);
     
     // if width or height were set to auto and we have a layer, try lookup
     if (f.height === AUTO || f.width === AUTO) {
@@ -24225,16 +24408,23 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     @test in viewDidResize
   */
   parentViewDidResize: function() {
-    var layout = this.get('layout') ;
+    var layout = this.get('layout') , isPercentage, isFixed;
     
     // only resizes if the layout does something other than left/top - fixed
     // size.
-    var isFixed = (
+    isFixed = (
       (layout.left !== undefined) && (layout.top !== undefined) &&
       (layout.width !== undefined) && (layout.height !== undefined)
     );
     
-    if (!isFixed) {
+    isPercentage = (SC.isPercentage(layout.left) || 
+                    SC.isPercentage(layout.top) ||
+                    SC.isPercentage(layout.width) || 
+                    SC.isPercentage(layout.right) ||
+                    SC.isPercentage(layout.centerX) || 
+                    SC.isPercentage(layout.centerY));
+    
+    if (!isFixed || isPercentage) {
       this.notifyPropertyChange('frame') ;
       this.viewDidResize() ;
     }
@@ -24330,23 +24520,31 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     @property {Hash}
     @readOnly
   */
+  
+  
   layoutStyle: function() {
     var layout = this.get('layout'), ret = {}, pdim = null, error, 
         AUTO = SC.LAYOUT_AUTO,
-        stLayout = this.get('useStaticLayout');
-    
-    if (layout.width !== undefined &&
-        layout.width === SC.LAYOUT_AUTO &&
-        !stLayout) {
-     error= SC.Error.desc("%@.layout() you cannot use width:auto if  staticLayout is disabled".fmt(this),"%@".fmt(this),-1);
-     console.error(error.toString()) ;
-     throw error ;
+        dims = SC._VIEW_DEFAULT_DIMS, loc = dims.length, x, value, key,
+        stLayout = this.get('useStaticLayout'),
+        lR = layout.right, 
+        lL = layout.left, 
+        lT = layout.top, 
+        lB = layout.bottom, 
+        lW = layout.width, 
+        lH = layout.height, 
+        lcX = layout.centerX, 
+        lcY = layout.centerY;
+    if (lW !== undefined && lW === SC.LAYOUT_AUTO && !stLayout) {
+      error= SC.Error.desc("%@.layout() you cannot use width:auto if "+
+              "staticLayout is disabled".fmt(this),"%@".fmt(this),-1);
+      console.error(error.toString()) ;
+      throw error ;
     }
     
-    if (layout.height !== undefined &&
-        layout.height === SC.LAYOUT_AUTO &&
-        !stLayout) {
-      error = SC.Error.desc("%@.layout() you cannot use height:auto if  staticLayout is disabled".fmt(this),"%@".fmt(this),-1);  
+    if (lH !== undefined && lH === SC.LAYOUT_AUTO && !stLayout) {
+      error = SC.Error.desc("%@.layout() you cannot use height:auto if "+
+                "staticLayout is disabled".fmt(this),"%@".fmt(this),-1);  
       console.error(error.toString()) ;
       throw error ;
     }
@@ -24354,45 +24552,67 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     // X DIRECTION
     
     // handle left aligned and left/right
-    if (!SC.none(layout.left)) {
-      ret.left = Math.floor(layout.left);
-      if (layout.width !== undefined) {
-        if(layout.width === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
-        else ret.width = Math.floor(layout.width) ;
-        ret.right = null ;
-      } else {
-        ret.width = null ;
-        ret.right = Math.floor(layout.right || 0) ;
+    if (!SC.none(lL)) {
+      if(SC.isPercentage(lL)) {
+        ret.left = (lL*100)+"%";  //percentage left
+      }else{
+        ret.left = Math.floor(lL); //px left
       }
       ret.marginLeft = 0 ;
       
+      if (lW !== undefined) {
+        if(lW === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
+        else if(SC.isPercentage(lW)) ret.width = (lW*100)+"%"; //percentage width
+        else ret.width = Math.floor(lW) ; //px width
+        ret.right = null ;
+      } else {
+        ret.width = null ;
+        if(lR && SC.isPercentage(lR)) ret.right = (lR*100)+"%"; //percentage right
+        else ret.right = Math.floor(lR || 0) ; //px right
+      }
+      
     // handle right aligned
-    } else if (!SC.none(layout.right)) {
-      ret.right = Math.floor(layout.right) ;
+    } else if (!SC.none(lR)) {
+      if(SC.isPercentage(lR)) {
+        ret.right = Math.floor(lR*100)+"%";  //percentage left
+      }else{
+        ret.right = Math.floor(lR) ;
+      }
       ret.marginLeft = 0 ;
       
-      if (SC.none(layout.width)) {
+      if (SC.none(lW)) {
         ret.left = 0;
         ret.width = null;
       } else {
         ret.left = null ;
-        if(layout.width === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
-        else ret.width = Math.floor(layout.width || 0) ;
+        if(lW === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
+        else if(lW && SC.isPercentage(lW)) ret.width = (lW*100)+"%" ; //percentage width
+        else ret.width = Math.floor(lW || 0) ; //px width
       }
       
     // handle centered
-    } else if (!SC.none(layout.centerX)) {
+    } else if (!SC.none(lcX)) {
       ret.left = "50%";
-      ret.width = Math.floor(layout.width || 0) ;
-      ret.marginLeft = Math.floor(layout.centerX - ret.width/2) ;
+      if(lW && SC.isPercentage(lW)) ret.width = (lW*100)+"%" ; //percentage width
+      else ret.width = Math.floor(lW || 0) ;
+      if(lW && SC.isPercentage(lW) && lcX >= 0 && lcX < 1){
+        ret.marginLeft = Math.floor((lcX - lW/2)*100)+"%" ;
+      }else if(lW && lW > 1 && (lcX >= 1 || lcX <= 0)){
+        ret.marginLeft = Math.floor(lcX - ret.width/2) ;
+      }else {
+        // This error message happens whenever width is not set.
+        // console.error("You have to set width and centerX usign both percentages or pixels");
+        ret.marginLeft = 0;
+      }
       ret.right = null ;
     
     // if width defined, assume top/left of zero
-    } else if (!SC.none(layout.width)) {
+    } else if (!SC.none(lW)) {
       ret.left =  0;
       ret.right = null;
-      if(layout.width === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
-      else ret.width = Math.floor(layout.width);
+      if(lW === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
+      else if(SC.isPercentage(lW)) ret.width = (lW*100)+"%";
+      else ret.width = Math.floor(lW);
       ret.marginLeft = 0;
       
     // fallback, full width.
@@ -24411,43 +24631,59 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     // Y DIRECTION
     
     // handle left aligned and left/right
-    if (!SC.none(layout.top)) {
-      ret.top = Math.floor(layout.top);
-      if (layout.height !== undefined) {
-        if(layout.height === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
-        else ret.height = Math.floor(layout.height) ;
+    if (!SC.none(lT)) {
+      if(SC.isPercentage(lT)) ret.top = (lT*100)+"%";
+      else ret.top = Math.floor(lT);
+      if (lH !== undefined) {
+        if(lH === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
+        else if(SC.isPercentage(lH)) ret.height = (lH*100)+"%" ;
+        else ret.height = Math.floor(lH) ;
         ret.bottom = null ;
       } else {
         ret.height = null ;
-        ret.bottom = Math.floor(layout.bottom || 0) ;
+        if(lB && SC.isPercentage(lB)) ret.bottom = (lB*100)+"%" ;
+        else ret.bottom = Math.floor(lB || 0) ;
       }
       ret.marginTop = 0 ;
       
     // handle right aligned
-    } else if (!SC.none(layout.bottom)) {
+    } else if (!SC.none(lB)) {
       ret.marginTop = 0 ;
-      ret.bottom = Math.floor(layout.bottom) ;
-      if (SC.none(layout.height)) {
+      if(SC.isPercentage(lB)) ret.bottom = (lB*100)+"%";
+      else ret.bottom = Math.floor(lB) ;
+      if (SC.none(lH)) {
         ret.top = 0;
         ret.height = null ;
       } else {
         ret.top = null ;
-        if(layout.height === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
-        else ret.height = Math.floor(layout.height || 0) ;
+        if(lH === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
+        else if(lH && SC.isPercentage(lH)) ret.height = (lH*100)+"%" ;
+        else ret.height = Math.floor(lH || 0) ;
       }
       
     // handle centered
-    } else if (!SC.none(layout.centerY)) {
+    } else if (!SC.none(lcY)) {
       ret.top = "50%";
-      ret.height = Math.floor(layout.height || 0) ;
-      ret.marginTop = Math.floor(layout.centerY - ret.height/2) ;
       ret.bottom = null ;
+      
+      if(lH && SC.isPercentage(lH)) ret.height = (lH*100)+ "%" ;
+      else ret.height = Math.floor(lH || 0) ;
+      
+      if(lH && SC.isPercentage(lH) && lcY >= 0 && lcY < 1){
+        ret.marginTop = Math.floor((lcY - lH/2)*100)+"%" ;
+      }else if(lH && lH > 1 && (lcY >= 1 || lcY <= 0)){
+        ret.marginTop = Math.floor(lcY - ret.height/2) ;
+      }else {
+        console.error("You have to set height and centerY to use both percentages or pixels");
+        ret.marginTop = 0;
+      }
     
-    } else if (!SC.none(layout.height)) {
+    } else if (!SC.none(lH)) {
       ret.top = 0;
       ret.bottom = null;
-      if(layout.height === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
-      else ret.height = Math.floor(layout.height || 0) ;
+      if(lH === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
+      else if(lH && SC.isPercentage(lH)) ret.height = (lH*100)+"%" ;
+      else ret.height = Math.floor(lH || 0) ;
       ret.marginTop = 0;
       
     // fallback, full width.
@@ -24477,15 +24713,14 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
     
     // set default values to null to allow built-in CSS to shine through
     // currently applies only to marginLeft & marginTop
-    var dims = SC._VIEW_DEFAULT_DIMS, loc = dims.length, x;
     while(--loc >=0) {
       x = dims[loc];
       if (ret[x]===0) ret[x]=null;
     }
     
     // convert any numbers into a number + "px".
-    for(var key in ret) {
-      var value = ret[key];
+    for(key in ret) {
+      value = ret[key];
       if (typeof value === SC.T_NUMBER) ret[key] = (value + "px");
     }
     return ret ;
@@ -24657,6 +24892,17 @@ SC.View = SC.Responder.extend(SC.DelegateSupport,
   */
   selectStart: function(evt) {
     return this.get('isTextSelectable');
+  },
+  
+  /**
+    Used to block the contextMenu per view.
+   
+    @param evt {SC.Event} the contextmenu event
+    @returns YES if the contextmenu can show up
+  */
+  contextMenu: function(evt) {
+    if(!this.get('isContextMenuEnabled')) evt.stop();
+    return true;
   }
   
 });
@@ -24697,47 +24943,66 @@ SC.View.mixin(/** @scope SC.View */ {
     Convert any layout to a Top, Left, Width, Height layout
   */
   convertLayoutToAnchoredLayout: function(layout, parentFrame){
-    var ret = {top: 0, left: 0, width: parentFrame.width, height: parentFrame.height};
+    var ret = {top: 0, left: 0, width: parentFrame.width, height: parentFrame.height},
+        pFW = parentFrame.width, pFH = parentFrame.height, //shortHand for parentDimensions
+        lR = layout.right, 
+        lL = layout.left, 
+        lT = layout.top, 
+        lB = layout.bottom, 
+        lW = layout.width, 
+        lH = layout.height, 
+        lcX = layout.centerX, 
+        lcY = layout.centerY;
     
     // X Conversion
     // handle left aligned and left/right
-    if (!SC.none(layout.left)) {
-      ret.left = Math.floor(layout.left);
-      if (layout.width !== undefined) {
-        if(layout.width === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
-        else ret.width = Math.floor(layout.width) ;
+    if (!SC.none(lL)) {
+      if(SC.isPercentage(lL)) ret.left = lL*pFW;
+      else ret.left = lL;
+      if (lW !== undefined) {
+        if(lW === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
+        else if(SC.isPercentage(lW)) ret.width = lW*pFW ;
+        else ret.width = lW ;
       } else {
-        ret.width = parentFrame.width - ret.left - Math.floor(layout.right || 0);
+        if (lR && SC.isPercentage(lR)) ret.width = pFW - ret.left - (lR*pFW);
+        else ret.width = pFW - ret.left - (lR || 0);
       }
 
     // handle right aligned
-    } else if (!SC.none(layout.right)) {
+    } else if (!SC.none(lR)) {
       
       // if no width, calculate it from the parent frame
-      if (SC.none(layout.width)) {
+      if (SC.none(lW)) {
         ret.left = 0;
-        ret.width = parentFrame.width - Math.floor(layout.right || 0);
+        if(lR && SC.isPercentage(lR)) ret.width = pFW - (lR*pFW);
+        else ret.width = pFW - (lR || 0);
       
       // If has width, calculate the left anchor from the width and right and parent frame
       } else {
-        if(layout.width === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
+        if(lW === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
         else { 
-          ret.width = layout.width;
-          ret.left = parentFrame.width - (layout.width + layout.right); 
+          if (SC.isPercentage(lW)) ret.width = lW*pFW;
+          else ret.width = lW;
+          if (SC.isPercentage(lR)) ret.left = pFW - (ret.width + lR);
+          else ret.left = pFW - (ret.width + lR); 
         }
       }
 
     // handle centered
-    } else if (!SC.none(layout.centerX)) {
-      ret.width = Math.floor(layout.width || 0) ;
-      ret.left = Math.floor((parentFrame.width - ret.width)/2) + layout.centerX;
+    } else if (!SC.none(lcX)) {
+      if(lW && SC.isPercentage(lW)) ret.width = (lW*pFW) ;
+      else ret.width = (lW || 0) ;
+      ret.left = ((pFW - ret.width)/2);
+      if (SC.isPercentage(lcX)) ret.left = ret.left + lcX*pFW;
+      else ret.left = ret.left + lcX;
     
     // if width defined, assume left of zero
-    } else if (!SC.none(layout.width)) {
+    } else if (!SC.none(lW)) {
       ret.left =  0;
-      if(layout.width === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
+      if(lW === SC.LAYOUT_AUTO) ret.width = SC.LAYOUT_AUTO ;
       else {
-        ret.width = Math.floor(layout.width);
+        if(SC.isPercentage(lW)) ret.width = lW*pFW;
+        else ret.width = lW;
       }
 
     // fallback, full width.
@@ -24752,48 +25017,67 @@ SC.View.mixin(/** @scope SC.View */ {
     
     // Y Conversion
     // handle left aligned and top/bottom
-    if (!SC.none(layout.top)) {
-      ret.top = Math.floor(layout.top);
-      if (layout.height !== undefined) {
-        if(layout.height === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
-        else ret.height = Math.floor(layout.height) ;
+    if (!SC.none(lT)) {
+      if(SC.isPercentage(lT)) ret.top = lT*pFH;
+      else ret.top = lT;
+      if (lH !== undefined) {
+        if(lH === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
+        else if (SC.isPercentage(lH)) ret.height = lH*pFH;
+        else ret.height = lH ;
       } else {
-        ret.height = parentFrame.height - ret.top - Math.floor(layout.bottom || 0);
+        ret.height = pFH - ret.top;
+        if(lB && SC.isPercentage(lB)) ret.height = ret.height - (lB*pFH);
+        else ret.height = ret.height - (lB || 0);
       }
 
     // handle bottom aligned
-    } else if (!SC.none(layout.bottom)) {
+    } else if (!SC.none(lB)) {
       
       // if no height, calculate it from the parent frame
-      if (SC.none(layout.height)) {
+      if (SC.none(lH)) {
         ret.top = 0;
-        ret.height = parentFrame.height - Math.floor(layout.bottom || 0);
+        if (lB && SC.isPercentage(lB)) ret.height = pFH - (lB*pFH);
+        else ret.height = pFH - (lB || 0);
       
       // If has height, calculate the top anchor from the height and bottom and parent frame
       } else {
-        if(layout.height === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
+        if(lH === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
         else { 
-          ret.height = layout.height;
-          ret.top = parentFrame.height - (layout.height + layout.bottom); 
+          if (SC.isPercentage(lH)) ret.height = lH*pFH;
+          else ret.height = lH;
+          ret.top = pFH - ret.height;
+          if (SC.isPercentage(lB)) ret.top = ret.top - (lB*pFH);
+          else ret.top = ret.top - lB; 
         }
       }
 
     // handle centered
-    } else if (!SC.none(layout.centerY)) {
-      ret.height = Math.floor(layout.height || 0) ;
-      ret.top = Math.floor((parentFrame.height - ret.height)/2) + layout.centerY;
+    } else if (!SC.none(lcY)) {
+      if(lH && SC.isPercentage(lH)) ret.height = (lH*pFH) ;
+      else ret.height = (lH || 0) ;
+      ret.top = ((pFH - ret.height)/2);
+      if(SC.isPercentage(lcY)) ret.top = ret.top + lcY*pFH;
+      else ret.top = ret.top + lcY;
     
     // if height defined, assume top of zero
-    } else if (!SC.none(layout.height)) {
+    } else if (!SC.none(lH)) {
       ret.top =  0;
-      if(layout.height === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
-      else ret.height = Math.floor(layout.height);
+      if(lH === SC.LAYOUT_AUTO) ret.height = SC.LAYOUT_AUTO ;
+      else if (SC.isPercentage(lH)) ret.height = lH*pFH;
+      else ret.height = lH;
 
     // fallback, full height.
     } else {
       ret.top = 0;
       ret.height = 0;
     }
+    
+    if(ret.top) ret.top = Math.floor(ret.top);
+    if(ret.bottom) ret.bottom = Math.floor(ret.bottom);
+    if(ret.left) ret.left = Math.floor(ret.left);
+    if(ret.right) ret.right = Math.floor(ret.right);
+    if(ret.width !== SC.LAYOUT_AUTO) ret.width = Math.floor(ret.width);
+    if(ret.height !== SC.LAYOUT_AUTO) ret.height = Math.floor(ret.height);
 
     // handle min/max
     if (layout.minHeight !== undefined) ret.minHeight = layout.minHeight ;
@@ -24927,9 +25211,10 @@ SC.View.mixin(/** @scope SC.View */ {
     }
     
     // apply localization recursively to childViews
-    var childViews = this.prototype.childViews, idx = childViews.length;
+    var childViews = this.prototype.childViews, idx = childViews.length,
+      viewClass;
     while(--idx>=0) {
-      var viewClass = childViews[idx];
+      viewClass = childViews[idx];
       loc = childLocs[idx];
       if (loc && viewClass && viewClass.loc) viewClass.loc(loc) ;
     }
@@ -25782,6 +26067,8 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
   // PROPERTIES
   //
 
+  applyImmediately: YES,
+
   /**
     If YES, the field will hide its text from display. The default value is NO.
   */
@@ -26081,6 +26368,7 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
     // always have at least an empty string
     v = this.get('fieldValue');
     if (SC.none(v)) v = '';
+    v = String(v);
 
     // update layer classes always
     context.setClass('not-empty', v.length > 0);
@@ -26140,7 +26428,7 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
       
       // Render the hint.
       context.push('<span class="sc-hint">', hint, '</span>') ;
-      
+      value = this.get('escapeHTML')?SC.RenderContext.escapeHTML(value):value; 
       // Render the input/textarea field itself, and close off the padding.
       if (this.get('isTextArea')) {
         context.push('<textarea name="', name, '" ', disabled, '>', value, '</textarea></span>') ;
@@ -26227,24 +26515,12 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
   //
 
   didCreateLayer: function() {
-    if(!this.get('isTextArea')){
-      arguments.callee.base.apply(this,arguments); 
-      this._addTextAreaEvents();
-    } 
-  },
-  
-  
-  didAppendToDocument: function() {
-    // Turns out that in safari and firefox you can attach events to a textarea
-    // only if it has been appended to the DOM or if you did did it during
-    // loading time. For input tags is the other way around. I tested in all
-    // browsers and if I add the event for input tag before being visible it works
-    // fine, and if I add the event after the textarea is visible then the 
-    // textarea works. In IE works fine both ways.
-    if(this.get('isTextArea')){
-      arguments.callee.base.apply(this,arguments);
-      this._addTextAreaEvents();
-    }
+    arguments.callee.base.apply(this,arguments); 
+    // For some strange reason if we add focus/blur events to textarea
+    // inmediately they won't work. However if I add them at the end of the
+    // runLoop it works fine.
+    if(this.get('isTextArea')) this.invokeLast(this._addTextAreaEvents);
+    else this._addTextAreaEvents();
   },
   
   _addTextAreaEvents: function() {
@@ -26307,10 +26583,13 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
     // to fix the cursor at any position. As of FF 3.5.3 mozilla hasn't fixed this 
     // bug, even though related bugs that I've found on their database appear
     // as fixed.  
+    
+    // UPDATE: Things seem to be working on FF3.6 therefore we are disabling the
+    // hack for the latest versions of FF.
     // 
     // Juan Pinzon
     
-    if (SC.browser.mozilla) {
+    if (parseFloat(SC.browser.mozilla)<1.9 && !this.get('useStaticLayout')) {
       var top, left, width, height, p, layer, element, textfield;
       
       // I'm caching in didCreateLayer this elements to improve perf
@@ -26357,7 +26636,8 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
   /** @private */
   willBecomeKeyResponderFrom: function(keyView) {
     if(this.get('isVisibleInWindow')) {
-      this.$input()[0].focus();
+      var inp = this.$input()[0];
+      if(inp) inp.focus();
       
       if(!this._txtFieldMouseDown){
         if(SC.browser.mozilla) this.invokeOnce(this._selectRootElement) ;
@@ -26397,9 +26677,11 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
     implementation.
   */
   keyDown: function(evt) {
-    // handle return and escape.  this way they can be passed on to the
+    // Handle return and escape.  this way they can be passed on to the
     // responder chain.
-    if ((evt.which === 13) && !this.get('isTextArea')) return NO ;
+    // If the event is triggered by a return while entering IME input,
+    // don't got through this path.
+    if ((evt.which === 13 && !evt.isIMEInput) && !this.get('isTextArea')) return NO ;
     if (evt.which === 27) return NO ;
 
     // handle tab key
@@ -26422,13 +26704,12 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
   },
 
   keyUp: function(evt) {
-    
     // The caret/selection could have moved.  In some browsers, though, the
     // element's values won't be updated until after this event is finished
     // processing.
     this.notifyPropertyChange('selection');
 
-    if (this._isKeyDown) {
+    if (this._isKeyDown && this.get('applyImmediately')) {
       this.invokeLater(this.fieldValueDidChange, 1, YES); // notify change
     }
     this._isKeyDown = NO;
@@ -26447,7 +26728,7 @@ SC.TextFieldView = SC.FieldView.extend(SC.StaticLayout, SC.Editable,
       return YES;
     } else {
       // This fixes the double click issue in firefox
-      if(SC.browser.mozilla) this.$input()[0].focus();
+      if(!SC.browser.safari) this.$input()[0].focus();
       return arguments.callee.base.apply(this,arguments);
     }
   },
@@ -26596,6 +26877,7 @@ SC.InlineTextFieldView = SC.TextFieldView.extend(SC.DelegateSupport,
     this._optIsCollection = options.isCollection;
     this._exampleElement = options.exampleElement ;
     this._delegate = options.delegate ;
+    this.set('delegate', this._delegate);
 
     if (!this._optframe || !this._delegate) {
       throw "At least frame and delegate options are required for inline editor";
@@ -26875,7 +27157,7 @@ SC.InlineTextFieldView = SC.TextFieldView.extend(SC.DelegateSupport,
     this.commitEditing() ;
     if(this._delegate){
       var next = this._delegate.nextValidKeyView();
-      if(next) next.beginEditing();
+      if(next && next.beginEditing) next.beginEditing();
     }
     return YES ;
   },
@@ -27521,8 +27803,13 @@ SC.Pane = SC.View.extend( /** @scope SC.Pane.prototype */ {
     @param {SC.RootResponder} rootResponder
     @returns {SC.Pane} receiver
   */
-  append: function() {
-    return this.appendTo(document.body) ;
+  append: function() {   
+    if(SC.userDefaults.get('ready')){
+      return this.appendTo(document.body) ;
+    } 
+    else {
+      SC.userDefaults.readyCallback(this, this.append);
+    }
   },
   
   /**
@@ -27933,6 +28220,8 @@ SC.ResponderContext = SC.Responder.extend({
       console.log('%@: makeFirstResponder => %@'.fmt(this, this.responderNameFor(responder)));
     }
     
+    responder.set("becomingFirstResponder", YES);
+    
     this._locked = YES;
     this._pendingResponder = null;
     
@@ -27951,16 +28240,25 @@ SC.ResponderContext = SC.Responder.extend({
 
     // Set new first responder.  If new firstResponder does not have its 
     // responderContext property set, then set it.
+    
+    // but, don't tell anyone until we have _also_ updated the hasFirstResponder state.
+    this.beginPropertyChanges();
+    
     this.set('firstResponder', responder) ;
     if (responder) responder.set('isFirstResponder', YES);
     
     this._notifyDidBecomeFirstResponder(responder, responder, common);
+    
+    // now, tell everyone the good news!
+    this.endPropertyChanges();
     
     this._locked = NO ;
     if (this._pendingResponder) {
       this.makeFirstResponder(this._pendingResponder);
       this._pendingResponder = null;
     }
+    
+    responder.set("becomingFirstResponder", NO);
     
     return this ;
   },
@@ -28637,6 +28935,12 @@ SC.mixin(/** @scope SC */ {
 
     
     var args = SC.A(arguments).slice(3);
+    
+    if (target && (method===undefined)) {
+      method = target;
+      target = this; 
+    }
+    
     var handler = function() {
       if (SC.T_STRING === typeof target) {
         target = SC.objectForPropertyPath(target);
@@ -28646,13 +28950,17 @@ SC.mixin(/** @scope SC */ {
         method = SC.objectForPropertyPath(method, target);
       }
 
-      if (!target || !method) throw "could not find callback for load";
+      // invoke callback only if it exists...
+      if (target) {
+        if (SC.T_STRING === typeof method) method = target[method];
+        if (!method) throw "could not find callback for load";
+
+        SC.RunLoop.begin();
+        method.apply(target, args);
+        SC.RunLoop.end();
+      }
       
-      SC.RunLoop.begin();
-      method.apply(target, args);
-      SC.RunLoop.end();
-      
-      handler = null; // cleanup memory
+      handler = target = method = null; // cleanup memory
     };
     
     tiki.async(bundleName).then(function() {
@@ -29908,10 +30216,7 @@ SC.RenderContext = SC.Builder.create(/** SC.RenderContext.fn */ {
       for(key in attrs) {
         if (!attrs.hasOwnProperty(key)) continue ;
         if (attrs[key] === null) continue ; // skip empty attrs
-        tag.push(key);
-        tag.push('="');
-        tag.push(attrs[key]) ;
-        tag.push('" ') ;
+        tag.push(key, '="', attrs[key], '" ');
       }
       
       // if we are using the DEFAULT_ATTRS temporary object, make sure we 
@@ -30059,15 +30364,31 @@ SC.RenderContext = SC.Builder.create(/** SC.RenderContext.fn */ {
     Adds the specified className to the current tag, if it does not already
     exist.  This method has no effect if there is no open tag.
     
-    @param {String} className the class to add
+    @param {String|Array} nameOrClasses the class name or an array of classes
     @returns {SC.RenderContext} receiver
   */
-  addClass: function(className) {
-    var classNames = this.classNames() ; // handles cloning ,etc.
-    if (classNames.indexOf(className)<0) {
-      classNames.push(className);
-      this._classNamesDidChange = YES ;
+  addClass: function(nameOrClasses) {
+    if(nameOrClasses === undefined || nameOrClasses === null) {
+      console.warn('You are adding an undefined or empty class'+ this.toString());
+      return this;
     }
+    
+    var classNames = this.classNames() ; // handles cloning ,etc.
+    if(SC.typeOf(nameOrClasses) === SC.T_STRING){
+      if (classNames.indexOf(nameOrClasses)<0) {
+        classNames.push(nameOrClasses);
+        this._classNamesDidChange = YES ;
+      }
+    } else {
+      for(var i = 0, iLen= nameOrClasses.length; i<iLen; i++){
+        var cl = nameOrClasses[i];
+        if (classNames.indexOf(cl)<0) {
+          classNames.push(cl);
+          this._classNamesDidChange = YES ;
+        }
+      }
+    }
+    
     return this;
   },
   
@@ -33232,7 +33553,7 @@ SC.Timer = SC.Object.extend(
     the timer.  This ensures that all timers scheduled in the same run loop
     cycle will execute in the sync with one another.
     
-    The value of this property is an offset like waht you get if you call
+    The value of this property is an offset like what you get if you call
     Date.now().
     
     @type {Number}
@@ -33615,7 +33936,7 @@ SC.Timer.returnTimerToPool = function(timer) {
 //            Portions ©2008-2009 Apple Inc. All rights reserved.
 // License:   Licened under MIT license (see license.js)
 // ==========================================================================
-
+/*globals ie7userdata openDatabase*/
 /**
   @class
   
@@ -33639,6 +33960,8 @@ SC.Timer.returnTimerToPool = function(timer) {
 */
 SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
   
+  ready: NO,
+  
   /** 
     the default domain for the user.  This will be used to store keys in
     local storage.  If you do not set this property, the wrong values may be
@@ -33656,6 +33979,8 @@ SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
     Defaults.  These will be used if not defined on localStorage.
   */
   _defaults: null,
+  
+  _safari3DB: null,
   
   /**
     Invoke this method to set the builtin defaults.  This will cause all
@@ -33675,34 +34000,53 @@ SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
     @returns {Object} read value
   */
   readDefault: function(keyName) {
-    var ret= undefined ;
+    var ret= undefined, userKeyName, localStorage, key, del, storageSafari3;
     
     // namespace keyname
     keyName = this._normalizeKeyName(keyName);
-    var userKeyName = this._userKeyName(keyName);
+    userKeyName = this._userKeyName(keyName);
 
     // look into recently written values
     if (this._written) ret = this._written[userKeyName];
     
     // attempt to read from localStorage
-    var localStorage = window.localStorage ;
-    if (!localStorage && window.globalStorage) {
-      localStorage = window.globalStorage[window.location.hostname];
+    
+    if(SC.browser.msie=="7.0"){
+       localStorage=document.body;
+       try{
+         localStorage.load("SC.UserDefaults");
+       }catch(e){
+         console.err("Couldn't load userDefaults in IE7: "+e.description);
+       }
+    }else if(this.HTML5DB_noLocalStorage){
+         storageSafari3 = this._safari3DB;
+    }else{
+       localStorage = window.localStorage ;
+       if (!localStorage && window.globalStorage) {
+         localStorage = window.globalStorage[window.location.hostname];
+       }
     }
-    if (localStorage) {
-      ret = localStorage[["SC.UserDefaults",userKeyName].join('@')];
+    if (localStorage || storageSafari3) {
+      key=["SC.UserDefaults",userKeyName].join('-at-');
+      if(SC.browser.msie=="7.0"){
+        ret=localStorage.getAttribute(key.replace(/\W/gi, ''));        
+      }else if(storageSafari3){
+        ret = this.dataHash[key];
+      }else{
+        ret = localStorage[key];
+      }
       if (!SC.none(ret)) {
         try {
           ret = SC.json.decode(ret);
         } 
-        catch(e) {
+        catch(ex) {
           ret = undefined;
         }
       } else ret = undefined;
     }
     
     // if not found in localStorage, try to notify delegate
-    var del =this.delegate ;
+    del =this.delegate ;
     if (del && del.userDefaultsNeedsDefault) {
       ret = del.userDefaultsNeedsDefault(this, keyName, userKeyName);
     }
@@ -33724,26 +34068,60 @@ SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
     @returns {SC.UserDefault} receiver
   */
   writeDefault: function(keyName, value) {
+    var userKeyName, written, localStorage, key, del, storageSafari3;
     
     keyName = this._normalizeKeyName(keyName);
-    var userKeyName = this._userKeyName(keyName);
+    userKeyName = this._userKeyName(keyName);
     
     // save to local hash
-    var written = this._written ;
+    written = this._written ;
     if (!written) written = this._written = {};
     written[userKeyName] = value ;
     
     // save to local storage
-    var localStorage = window.localStorage ;
-    if (!localStorage && window.globalStorage) {
-      localStorage = window.globalStorage[window.location.hostname];
+    
+    if(SC.browser.msie=="7.0"){
+      localStorage=document.body;
+    }else if(this.HTML5DB_noLocalStorage){
+      storageSafari3 = this._safari3DB;
+    }else{
+       localStorage = window.localStorage ;
+       if (!localStorage && window.globalStorage) {
+         localStorage = window.globalStorage[window.location.hostname];
+       }
     }
-    if (localStorage) {
-      localStorage[["SC.UserDefaults",userKeyName].join('@')] = SC.json.encode(value);
+    key=["SC.UserDefaults",userKeyName].join('-at-');
+    if (localStorage || storageSafari3) {
+      var encodedValue = SC.json.encode(value);
+      if(SC.browser.msie=="7.0"){
+        localStorage.setAttribute(key.replace(/\W/gi, ''), encodedValue);
+        localStorage.save("SC.UserDefaults");
+      }else if(storageSafari3){
+        var obj = this;
+        storageSafari3.transaction(
+          function (t) {
+            t.executeSql("delete from SCLocalStorage where key = ?", [key], 
+              function (){
+                t.executeSql("insert into SCLocalStorage(key, value)"+
+                            " VALUES ('"+key+"', '"+encodedValue+"');", 
+                            [], obj._nullDataHandler, obj.killTransaction
+                );
+              }
+            );
+          }
+        );
+        this.dataHash[key] = encodedValue;
+      }else{
+        try{
+          localStorage[key] = encodedValue;
+        }catch(e){
+          console.error("Failed using localStorage. "+e);
+        }
+      }
     }
     
     // also notify delegate
-    var del = this.delegate;
+    del = this.delegate;
     if (del && del.userDefaultsDidChange) {
       del.userDefaultsDidChange(this, keyName, value, userKeyName);
     }
@@ -33758,23 +34136,46 @@ SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
     @returns {SC.UserDefaults} receiver
   */
   resetDefault: function(keyName) {  
-    var fullKeyName = this._normalizeKeyName(keyName);
-    var userKeyName = this._userKeyName(fullKeyName);
+    var fullKeyName, userKeyName, written, localStorage, key, storageSafari3;
+    fullKeyName = this._normalizeKeyName(keyName);
+    userKeyName = this._userKeyName(fullKeyName);
     
     this.propertyWillChange(keyName);
     this.propertyWillChange(fullKeyName);
     
-    var written = this._written;
+    written = this._written;
     if (written) delete written[userKeyName];
     
-    var localStorage = window.localStorage ;
-    if (!localStorage && window.globalStorage) {
-      localStorage = window.globalStorage[window.location.hostname];
+    if(SC.browser.msie=="7.0"){
+       localStorage=document.body;
+    }else if(this.HTML5DB_noLocalStorage){
+         storageSafari3 = this._safari3DB;
+    }else{
+       localStorage = window.localStorage ;
+       if (!localStorage && window.globalStorage) {
+         localStorage = window.globalStorage[window.location.hostname];
+       }
     }
 
+    key=["SC.UserDefaults",userKeyName].join('-at-');
+
     if (localStorage) {
-      delete localStorage[["SC.UserDefaults",userKeyName].join('@')];
+      if(SC.browser.msie=="7.0"){
+        localStorage.setAttribute(key.replace(/\W/gi, ''), null);
+        localStorage.save("SC.UserDefaults");
+      } else if(storageSafari3){
+        var obj = this;
+        storageSafari3.transaction(
+          function (t) {
+            t.executeSql("delete from SCLocalStorage where key = ?", [key], null);
+          }
+        );
+        delete this.dataHash[key];
+      }else{
+        delete localStorage[key];
+      }
     }
+    
 
     this.propertyDidChange(keyName);
     this.propertyDidChange(fullKeyName);
@@ -33814,7 +34215,7 @@ SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
   */
   _userKeyName: function(keyName) {
     var user = this.get('userDomain') || '(anonymous)' ;
-    return [user,keyName].join('@');
+    return [user,keyName].join('-at-');
   },
   
   _domainDidChange: function() {
@@ -33836,8 +34237,87 @@ SC.UserDefaults = SC.Object.extend(/** @scope SC.UserDefaults.prototype */ {
     arguments.callee.base.apply(this,arguments);
     this._scud_userDomain = this.get('userDomain');
     this._scud_appDomain  = this.get('appDomain');
-  }
+    if(SC.browser.msie=="7.0"){
+      //Add user behavior userData. This works in all versions of IE.
+      //Adding to the body as is the only element never removed.
+      document.body.addBehavior('#default#userData');
+    }
+    this.HTML5DB_noLocalStorage = ((parseInt(SC.browser.safari, 0)>523) && (parseInt(SC.browser.safari, 0)<528));
+    if(this.HTML5DB_noLocalStorage){
+      var myDB;
+      try {
+        if (!window.openDatabase) {
+          console.error("Trying to load a database with safari version 3.1 "+
+                  "to get SC.UserDefaults to work. You are either in a"+
+                  " previous version or there is a problem with your browser.");
+          return;
+        } else {
+          var shortName = 'scdb',
+              version = '1.0',
+              displayName = 'SproutCore database',
+              maxSize = 65536; // in bytes,
+          myDB = openDatabase(shortName, version, displayName, maxSize);
+    
+          // You should have a database instance in myDB.
+    
+        }
+      } catch(e) {
+        console.error("Trying to load a database with safari version 3.1 "+
+                "to get SC.UserDefaults to work. You are either in a"+
+                " previous version or there is a problem with your browser.");
+        return;
+      }
+    
+      if(myDB){
+        var obj = this;
+        myDB.transaction(
+          function (transaction) {
+            transaction.executeSql('CREATE TABLE IF NOT EXISTS SCLocalStorage'+
+              '(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL);', 
+              [], obj._nullDataHandler, obj.killTransaction);
+          }
+        );
+        myDB.transaction(
+          function (transaction) {
+            transaction.parent = obj;
+            transaction.executeSql('SELECT * from SCLocalStorage;', 
+                [], function(transaction, results){
+                  var hash={}, row;
+                  for(var i=0, iLen=results.rows.length; i<iLen; i++){
+                    row=results.rows.item(i);
+                    hash[row['key']]=row['value'];
+                  }
+                  transaction.parent.dataHash = hash;
+                  SC.userDefaults.set('ready', YES);
+                }, obj.killTransaction);
+          }
+        );
+        this._safari3DB=myDB;
+      }
+    }else{
+      this.set('ready', YES);
+    }
+  },
+
+
+  //Private methods to use if user defaults uses the database in safari 3
+  _killTransaction: function(transaction, error){
+    return true; // fatal transaction error
+  },
+
+  _nullDataHandler: function(transaction, results){},
+        
+  readyCallback: function(ob, func){
+    this.func = func;
+    this.ob = ob;
+  },
   
+  readyChanged: function(){
+    if(this.ready===YES){
+      var f = this.func;
+      if(f) f.apply(this.ob);
+    }
+  }.observes('ready')  
 });
 
 /** global user defaults. */
@@ -33924,6 +34404,12 @@ SC.mixin( /** @scope SC */ {
     }
     return url ;
   },
+  
+  /** Return true if the number is between 0 and 1 */
+  isPercentage: function(val){
+    return (val<1 && val>0);
+  },
+
   
   
   /** Return the left edge of the frame */
@@ -34050,7 +34536,7 @@ SC.mixin( /** @scope SC */ {
     @returns {String} A string representation of the rect.
   */
   stringFromRect: function(r) {
-    return '{%@, %@, %@, %@}'.fmt(r.x, r.y, r.width, r.height);
+    return '{'+r.x+', '+r.y+', '+r.width+', '+r.height+'}';
   },
   
   /**
@@ -34118,7 +34604,7 @@ SC.mixin( /** @scope SC */ {
       document.body.insertBefore(elem, null);
     }
 
-    style = '%@; width: %@px; left: %@px; position: absolute'.fmt(style, width, (-1*width));
+    style = style+'; width: '+width+'px; left: '+(-1*width)+'px; position: absolute';
     SC.$(elem).attr('style', style);
 
     if (classes !== '') {
@@ -34133,18 +34619,18 @@ SC.mixin( /** @scope SC */ {
   },
   
   /**
-  Given a string and an example element or style string, and an optional
-  set of class names, calculates the width and height of that block of text.
+  Sets up a string measuring environment.
   
-  To constrain the width, set max-width on the exampleElement or in the style string.
+  You may want to use this, in conjunction with teardownStringMeasurement and
+  measureString, instead of metricsForString, if you will be measuring many strings
+  with the same settings. It would be a lot more efficient, as it would only prepare
+  and teardown once instead of several times.
   
-  @param string {String} The string to measure.
   @param exampleElement The example element to grab styles from, or the style string to use.
   @param classNames {String} (Optional) Class names to add to the test element.
   */
-  metricsForString: function(string, exampleElement, classNames)
-  {
-    var element = this._metricsCalculationElement, width, height, classes, styles, style;
+  prepareStringMeasurement: function(exampleElement, classNames) {
+    var element = this._metricsCalculationElement, classes, styles, style;
     
     // collect the class names
     classes = SC.A(classNames).join(' ');
@@ -34213,25 +34699,72 @@ SC.mixin( /** @scope SC */ {
       element.setAttribute("style", style + "; position:absolute; left: 0px; top: 0px; bottom: auto; right: auto; width: auto; height: auto;");
     }
     
-    // the conclusion of which to use (innerText or textContent) should be cached
-    if (typeof element.innerText != "undefined") element.innerText = string;
-    else element.textContent = string;
-    
     element.className = classes;
-    
-    // measure
-    var result = {
-      width: element.clientWidth,
-      height: element.clientHeight
-    };
+    element = null;
+  },
+  
+  /**
+  Tears down the string measurement environment. Usually, this doesn't _have_
+  to be called, but there are too many what ifs: for example, what if the measurement
+  environment has a bright green background and is over 10,000px wide? Guess what: it will
+  become visible on the screen.
+  
+  So, generally, we tear the measurement environment down so that it doesn't cause issue.
+  However, we keep the DOM element for efficiency.
+  */
+  teardownStringMeasurement: function() {
+    var element = this._metricsCalculationElement;
     
     // clear element
     element.innerHTML = "";
     element.className = "";
     element.setAttribute("style", ""); // get rid of any junk from computed style.
-    
-    // clean up
     element = null;
+  },
+  
+  /**
+  Measures a string in the prepared environment.
+  
+  An easier and simpler alternative (but less efficient for bulk measuring) is metricsForString.
+  
+  @param string {String} The string to measure.
+  */
+  measureString: function(string) {
+    var element = this._metricsCalculationElement;
+    if (!element) {
+      throw "measureString requires a string measurement environment to be set up. Did you mean metricsForString?";
+    }
+    
+    // the conclusion of which to use (innerText or textContent) should be cached
+    if (typeof element.innerText != "undefined") element.innerText = string;
+    else element.textContent = string;
+    
+    // generate result
+    var result = {
+      width: element.clientWidth,
+      height: element.clientHeight
+    };
+    
+    element = null;
+    return result;
+  },
+  
+  
+  /**
+  Given a string and an example element or style string, and an optional
+  set of class names, calculates the width and height of that block of text.
+  
+  To constrain the width, set max-width on the exampleElement or in the style string.
+  
+  @param string {String} The string to measure.
+  @param exampleElement The example element to grab styles from, or the style string to use.
+  @param classNames {String} (Optional) Class names to add to the test element.
+  */
+  metricsForString: function(string, exampleElement, classNames)
+  {
+    SC.prepareStringMeasurement(exampleElement, classNames);
+    var result = SC.measureString(string);
+    SC.teardownStringMeasurement();
     return result;
   },
 
@@ -34282,7 +34815,7 @@ SC.mixin( /** @scope SC */ {
         // In FireFox 3 -- the offsetTop/offsetLeft subtracts the clientTop/
         // clientLeft of the offset parent.
         var offsetParent = element.offsetParent ;
-        if ((SC.browser.mozilla >= 3) && offsetParent) {
+        if (SC.browser.mozilla.match(/1[.]9/) && offsetParent) {
           valueT -= offsetParent.clientTop ;
           valueL -= offsetParent.clientLeft;
         }
@@ -35132,10 +35665,15 @@ SC.Validator.Number = SC.Validator.extend(
     Allow only numbers, dashes, period, and commas
   */
   validateKeyDown: function(form, field, charStr) {
+    var text = field.$input().val();
+    if (!text) text='';
+    text+=charStr;
     if(this.get('places')===0){
-      return (charStr.match(/^[\-+]?[0-9,\0]*/)[0]===charStr) || charStr.length === 0;
+      if(charStr.length===0) return true;
+      else return text.match(/^[\-{0,1}]?[0-9,\0]*/)[0]===text;
     }else {
-      return (charStr.match(/^[\-+]?[0-9,\0]*\.?[0-9\0]+/)===charStr) || charStr.length === 0;
+      if(charStr.length===0) return true;
+      else return text.match(/^[\-{0,1}]?[0-9,\0]*\.?[0-9\0]+/)===text;
     }
   }
     
@@ -35225,6 +35763,92 @@ SC.Validator.Password = SC.Validator.extend(
     if (isInvalid) {
       return this.updateFields(form, this.validate(false)) ;
     } else return SC.VALIDATE_NO_CHANGE ;
+  }
+    
+}) ;
+
+/* >>>>>>>>>> BEGIN source/validators/positive_integer.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+sc_require('validators/validator') ;
+
+/**
+  Handles parsing and validating of positive integers.
+  
+  @extends SC.Validator
+  @author Nirumal Thomas
+  @version 1.0
+  @class
+*/
+SC.Validator.PositiveInteger = SC.Validator.extend(
+/** @scope SC.Validator.PositiveInteger.prototype */ {
+
+  /**
+    Default Value to be displayed. If the value in the text field is null,
+    undefined or an empty string, it will be replaced by this value.
+
+    @property
+    @type Number
+    @default null
+  */
+  defaultValue: null,
+
+  fieldValueForObject: function(object, form, field) {
+    switch(SC.typeOf(object)) {
+      case SC.T_NUMBER:
+        object = object.toFixed(0) ;
+        break ;
+      case SC.T_NULL:
+      case SC.T_UNDEFINED:
+        object = this.get('defaultValue') ;
+        break ;
+    }
+    return object ;
+  },
+
+  objectForFieldValue: function(value, form, field) {
+    // strip out commas
+    value = value.replace(/,/g,'');
+    switch(SC.typeOf(value)) {
+      case SC.T_STRING:
+        if (value.length === 0) {
+          value = this.get('defaultValue') ;
+        } else {
+          value = parseInt(value, 0) ;
+        }
+        break ;
+      case SC.T_NULL:
+      case SC.T_UNDEFINED:
+        value = this.get('defaultValue') ;
+        break ;
+    }
+    return value ;
+  },
+
+  validate: function(form, field) {
+    var value = field.get('fieldValue') ;
+    return (value === '') || !isNaN(value) ;
+  },
+  
+  validateError: function(form, field) {
+    var label = field.get('errorLabel') || 'Field' ;
+    return SC.$error("Invalid.Number(%@)".loc(label), label) ;
+  },
+  
+  /** 
+    Allow only numbers
+  */
+  validateKeyDown: function(form, field, charStr) {
+    var text = field.$input().val();
+    if (!text) text='';
+    text+=charStr;
+    if(charStr.length===0) return true ;
+    else return text.match(/^[0-9\0]*/)[0]===text;
   }
     
 }) ;
@@ -35389,7 +36013,7 @@ SC.IMAGE_STATE_SPRITE = 'sprite';
 */
 SC.BLANK_IMAGE_DATAURL = "data:image/gif;base64,R0lGODlhAQABAJAAAP///wAAACH5BAUQAAAALAAAAAABAAEAAAICBAEAOw==";
 
-SC.BLANK_IMAGE_URL = SC.browser.msie && SC.browser.msie<8 ? '/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/blank.gif' : SC.BLANK_IMAGE_DATAURL;
+SC.BLANK_IMAGE_URL = SC.browser.msie && SC.browser.msie<8 ? '/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/blank.gif' : SC.BLANK_IMAGE_DATAURL;
 
 /**
   @class
@@ -35668,12 +36292,15 @@ SC.LabelView = SC.View.extend(SC.Control,
     @field
   */
   displayValue: function() {
-    var value = this.get('value') ;
+    var value, formatter;
+    
+    value = this.get('value') ;
     
     // 1. apply the formatter
-    var formatter = this.getDelegateProperty('formatter', this.displayDelegate) ;
+    formatter = this.getDelegateProperty('formatter', this.displayDelegate) ;
     if (formatter) {
-      var formattedValue = (SC.typeOf(formatter) === SC.T_FUNCTION) ? formatter(value, this) : formatter.fieldValueForObject(value, this) ;
+      var formattedValue = (SC.typeOf(formatter) === SC.T_FUNCTION) ? 
+          formatter(value, this) : formatter.fieldValueForObject(value, this) ;
       if (!SC.none(formattedValue)) value = formattedValue ;
     }
     
@@ -35681,7 +36308,7 @@ SC.LabelView = SC.View.extend(SC.Control,
     // join with commas.
     if (SC.typeOf(value) === SC.T_ARRAY) {
       var ary = [];
-      for(var idx=0;idx<value.get('length');idx++) {
+      for(var idx=0, idxLen = value.get('length'); idx< idxLen;idx++) {
         var x = value.objectAt(idx) ;
         if (!SC.none(x) && x.toString) x = x.toString() ;
         ary.push(x) ;
@@ -35700,6 +36327,20 @@ SC.LabelView = SC.View.extend(SC.Control,
     
     return value ;
   }.property('value', 'localize', 'formatter', 'escapeHTML').cacheable(),
+  
+  
+  /**
+    [RO] The hint value that will actually be displayed.
+    
+    This property is dynamically computed by applying localization 
+    and other normalization utilities.
+    
+  */
+  hintValue: function() {
+    var hintVal = this.get('hint');
+    if (this.get('escapeHTML')) hintVal = SC.RenderContext.escapeHTML(hintVal);
+    return hintVal ;
+  }.property('hint', 'escapeHTML').cacheable(),
   
   /**
     Enables editing using the inline editor.
@@ -35742,10 +36383,10 @@ SC.LabelView = SC.View.extend(SC.Control,
     if (this.get('isEditing')) return YES ;
     if (!this.get('isEditable')) return NO ;
 
-    var el = this.$();
-    var value = this.get('value') || '' ;
-    var f = SC.viewportOffset(el[0]) ;
-    var frameTemp = this.convertFrameFromView(this.get('frame'), null) ;
+    var el = this.$(),
+        value = this.get('value') || '',
+        f = SC.viewportOffset(el[0]),
+        frameTemp = this.convertFrameFromView(this.get('frame'), null) ;
     f.width=frameTemp.width;
     f.height=frameTemp.height;
     
@@ -35792,8 +36433,9 @@ SC.LabelView = SC.View.extend(SC.Control,
     Hide the label view while the inline editor covers it.
   */
   inlineEditorDidBeginEditing: function(inlineEditor) {
-    this._oldOpacity = this.$().css('opacity') ;
-    this.$().css('opacity', 0.0);
+    var layer = this.$();
+    this._oldOpacity = layer.css('opacity') ;
+    layer.css('opacity', 0.0);
   },
 
   /** @private
@@ -35820,34 +36462,47 @@ SC.LabelView = SC.View.extend(SC.Control,
   render: function(context, firstTime) {
     var value = this.get('displayValue'),
         icon = this.get('icon'),
-        hint = this.get('hint');
+        hint = this.get('hintValue'),
+        classes, stylesHash, text,
+        iconChanged = false, textChanged = false;
     
-    // add icon if needed
     if (icon) {
-      var url = (icon.indexOf('/')>=0) ? icon : SC.BLANK_IMAGE_URL;
-      var className = (url === icon) ? '' : icon ;
-      icon = '<img src="%@" alt="" class="icon %@" />'.fmt(url, className) ;
-      context.push(icon);
+      var url = (icon.indexOf('/')>=0) ? icon : SC.BLANK_IMAGE_URL,
+          className = (url === icon) ? '' : icon ;
+      icon = '<img src="'+url+'" alt="" class="icon '+className+'" />';
+      if(icon!==this._iconCache) {
+        this._iconCache=icon;
+        iconChanged = true;
+      }
     }
     
-    // if there is a hint set and no value, render the hint
-    // otherwise, render the value
     if (hint && (!value || value === '')) {
-      context.push('<span class="sc-hint">', hint, '</span>');
-    } else { 
-      context.push(value);
+      text = '<span class="sc-hint">'+hint+'</span>';
+    }else{
+      text = value;
+    }
+    if(text!==this._textCache) {
+      this._textCache=text;
+      textChanged = true;
+    }
+        
+    if(firstTime || textChanged || iconChanged){
+      context.push(icon, text);
     }
     
     // and setup alignment and font-weight on styles
-    context.addStyle('text-align',  this.get('textAlign'))
-           .addStyle('font-weight', this.get('fontWeight'));
-           
-    var classes = this._TEMPORARY_CLASS_HASH;
-    classes.icon = !!this.get('icon');
-    context.setClass(classes);
+    stylesHash = { 
+      'text-align': this.get('textAlign'), 
+      'font-weight': this.get('fontWeight')
+    };
            
     // if we are editing, set the opacity to 0
-    if (this.get('isEditing')) context.addStyle('opacity', 0.0);
+    if (this.get('isEditing')) stylesHash['opacity']=0;
+    context.addStyle(stylesHash);
+    
+    classes = this._TEMPORARY_CLASS_HASH;
+    classes.icon = !!this.get('icon');
+    context.setClass(classes);
   }
   
 });
@@ -35904,44 +36559,44 @@ SC.MainPane = SC.Pane.extend({
   classNames: ['sc-main']
   
 });
-; tiki.script('sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/desktop', {
   "packages": {
     "sproutcore/runtime": {
       "scripts": [
         {
-          "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-          "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+          "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+          "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
         }
       ]
     },
     "sproutcore/datastore": {
       "scripts": [
         {
-          "url": "/static/sproutcore/datastore/en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js",
-          "id": "sproutcore/datastore:en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js"
+          "url": "/static/sproutcore/datastore/en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js",
+          "id": "sproutcore/datastore:en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js"
         }
       ]
     },
     "sproutcore/foundation": {
       "stylesheets": [
         {
-          "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css",
-          "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css"
+          "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css",
+          "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css"
         }
       ],
       "scripts": [
         {
-          "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js",
-          "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js"
+          "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js",
+          "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js"
         }
       ]
     }
   },
   "stylesheets": [
     {
-      "url": "/static/sproutcore/desktop/en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css",
-      "id": "sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css"
+      "url": "/static/sproutcore/desktop/en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css",
+      "id": "sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css"
     }
   ],
   "depends": [
@@ -35951,8 +36606,8 @@ SC.MainPane = SC.Pane.extend({
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/desktop/en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js",
-      "id": "sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js"
+      "url": "/static/sproutcore/desktop/en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js",
+      "id": "sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js"
     }
   ]
 });
@@ -36043,10 +36698,10 @@ SC.Border = {
     if (style) {
       if (this._BORDER_REGEXP.exec(style)) {
         context.addClass(style);
-      } else context.addStyle('border', '1px %@ solid'.fmt(style));
+      } else context.addStyle('border', '1px '+style+' solid');
     }
   }
-  
+
 };
 /* >>>>>>>>>> BEGIN source/mixins/collection_group.js */
 // ==========================================================================
@@ -36945,9 +37600,9 @@ SC.PanelPane = SC.Pane.extend({
 // Constants
 SC.TOGGLE_BEHAVIOR = 'toggle';
 SC.PUSH_BEHAVIOR =   'push';
-SC.TOGGLE_ON_BEHAVIOR = "on";
-SC.TOGGLE_OFF_BEHAVIOR = "off" ;
-SC.HOLD_BEHAVIOR = 'hold' ;
+SC.TOGGLE_ON_BEHAVIOR = 'on';
+SC.TOGGLE_OFF_BEHAVIOR = 'off';
+SC.HOLD_BEHAVIOR = 'hold';
 
 /** @class
 
@@ -36955,6 +37610,11 @@ SC.HOLD_BEHAVIOR = 'hold' ;
   both standard push buttons and tab-style controls.  See also SC.CheckboxView
   and SC.RadioView which are implemented as field views, but can also be 
   treated as buttons.
+  
+  By default, a button uses the SC.Control mixin which will apply CSS 
+  classnames when the state of the button changes:
+    - active     when button is active
+    - sel        when button is toggled to a selected state
   
   @extends SC.View
   @extends SC.Control
@@ -36964,7 +37624,18 @@ SC.HOLD_BEHAVIOR = 'hold' ;
 SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
 /** @scope SC.ButtonView.prototype */ {
   
+  /**
+    What type of element this view is represented as
+    
+    @property {String}
+  */
   tagName: 'a',
+  
+  /**
+    Class names that will be applied to this view
+    
+    @property {Array}
+  */
   classNames: ['sc-button-view'],
   
   /**
@@ -36976,6 +37647,8 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     
     The default SproutCore theme supports "regular", "capsule", "checkbox", 
     and "radio"
+    
+    @property {String}
   */
   theme: 'square',
   
@@ -36983,20 +37656,25 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     Optionally set the behavioral mode of this button.  
   
     Possible values are:
-
-    - *SC.PUSH_BEHAVIOR* Pressing the button will trigger an action tied to the button. Does not change the value of the button.
-    - *SC.TOGGLE_BEHAVIOR* Pressing the button will invert the current value of the button. If the button has a mixed value, it will be set to true.
-    - *SC.TOGGLE_ON_BEHAVIOR* Pressing the button will set the current state to true no matter the previous value.
-    - *SC.TOGGLE_OFF_BEHAVIOR* Pressing the button will set the current state to false no matter the previous value.
-  
-  */  
+    - *SC.PUSH_BEHAVIOR* Pressing the button will trigger an action tied to the 
+      button. Does not change the value of the button.
+    - *SC.TOGGLE_BEHAVIOR* Pressing the button will invert the current value of 
+      the button. If the button has a mixed value, it will be set to true.
+    - *SC.TOGGLE_ON_BEHAVIOR* Pressing the button will set the current state to 
+      true no matter the previous value.
+    - *SC.TOGGLE_OFF_BEHAVIOR* Pressing the button will set the current state to 
+      false no matter the previous value.
+      
+    @property {String}
+  */
   buttonBehavior: SC.PUSH_BEHAVIOR,
 
   /*
-    If buttonBehavior is SC.HOLD_BEHAVIOR, this specifies, in miliseconds, how often to trigger the action.
-    Ignored for other behaviors.
+    If buttonBehavior is SC.HOLD_BEHAVIOR, this specifies, in miliseconds, how 
+    often to trigger the action. Ignored for other behaviors.
+    
+    @property {Number}
   */
-
   holdInterval: 100,
 
   /**
@@ -37004,20 +37682,26 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     
     This is the same as setting the keyEquivalent to 'return'.  This will also
     apply the "def" classname to the button.
+    
+    @property {Boolean}
   */
   isDefault: NO,
   isDefaultBindingDefault: SC.Binding.oneWay().bool(),
   
   /**
     If YES, then this button will be triggered when you hit escape.
-    
     This is the same as setting the keyEquivalent to 'escape'.
+    
+    @property {Boolean}
   */  
   isCancel: NO,
   isCancelBindingDefault: SC.Binding.oneWay().bool(),
 
   /**
-    The button href value.  This can be used to create localized button href values.  Setting an empty or null href will set it to javascript:;
+    The button href value.  This can be used to create localized button href 
+    values.  Setting an empty or null href will set it to javascript:;
+    
+    @property {String}
   */
   href: '',
 
@@ -37038,7 +37722,7 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     clicked.  It is generally better to use the target/action approach and 
     to implement your code in a controller of some type.
     
-    @type String
+    @property {String}
   */
   action: null,
   
@@ -37050,9 +37734,16 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     null, then the button will search the responder chain for a view that 
     implements the action when the button is pressed instead.
     
-    @type Object
+    @property {Object}
   */
   target: null,
+  
+  /** 
+    If YES, use a focus ring.
+    
+    @property {Boolean}
+  */
+  supportFocusRing: NO,
   
   /**
     fakes a click... evt is optional.  
@@ -37060,7 +37751,8 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     Temporarily highlights the button to show that it is being triggered.  
     Does nothing if the button is disabled. 
     
-    @returns {bool} success/failure of the request
+    @param {Event} evt
+    @returns {Boolean} success/failure of the request
   */  
   triggerAction: function(evt) {  
     if (!this.get('isEnabled')) return NO;
@@ -37072,7 +37764,11 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
   },
   
   /**
-    This method is called anytime the button's action is triggered.  You can implement this method in your own subclass to perform any cleanup needed after an action is performed.
+    This method is called anytime the button's action is triggered.  You can 
+    implement this method in your own subclass to perform any cleanup needed 
+    after an action is performed.
+    
+    @property {function}
   */
   didTriggerAction: function() {},
 
@@ -37085,6 +37781,8 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     Note that the title width does not exactly match the width of the button
     itself.  Extra padding added by the theme can impact the final total
     size.
+    
+    @property {Number}
   */
   titleMinWidth: 80,
   
@@ -37108,10 +37806,10 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
 
   render: function(context, firstTime) {
     // add href attr if tagName is anchor...
-    var href, toolTip, classes;
+    var href, toolTip, classes, theme;
     if (this.get('tagName') === 'a') {
       href = this.get('href');
-      if (!href || (href.length === 0)) href = "javascript"+":;";
+      if (!href || (href.length === 0)) href = "javascript:;";
       context.attr('href', href);
     }
 
@@ -37128,15 +37826,26 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     classes.def = this.get('isDefault');
     classes.cancel = this.get('isCancel');
     classes.icon = !!this.get('icon');
-    context.attr('role', 'button')
-      .setClass(classes).addClass(this.get('theme'));
+    context.attr('role', 'button').setClass(classes);
+    theme = this.get('theme');
+    if (theme) context.addClass(theme);
     // render inner html 
-    if(firstTime){
-       context = context.push("<span class='sc-button-inner' style = 'min-width:%@px'>"
-            .fmt(this.get('titleMinWidth')));
+    if(firstTime) {
+      context = context.push("<span class='sc-button-inner' style = 'min-width:"
+        ,this.get('titleMinWidth'),
+        "px'>");
+      
       this.renderTitle(context, firstTime) ; // from button mixin
       context.push("</span>") ;
-    }else{
+      
+      if(this.get('supportFocusRing')) {
+        context.push('<div class="focus-ring">',
+                      '<div class="focus-left"></div>',
+                      '<div class="focus-middle"></div>',
+                      '<div class="focus-right"></div></div>');
+      }
+    }
+    else {
       this.renderTitle(context, firstTime) ;
     }
    },
@@ -37221,7 +37930,7 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     return YES ;
   },
   
-  
+  /** @private */
   keyDown: function(evt) {
     // handle tab key
     if (evt.which === 9) {
@@ -37278,6 +37987,7 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     }
   },
 
+  /** @private */
   _runAction: function(evt) {
     var action = this.get('action'),
         target = this.get('target') || null;
@@ -37293,6 +38003,7 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
     }
   },
 
+  /** @private */
   _runHoldAction: function(evt, skipRepeat) {
     if (this.get('isActive')) {
       this._runAction();
@@ -37340,7 +38051,8 @@ SC.ButtonView = SC.View.extend(SC.Control, SC.Button, SC.StaticLayout,
       this._isFocused = YES ;
       this.becomeFirstResponder();
       if (this.get('isVisibleInWindow')) {
-        this.$()[0].focus();
+        var elem=this.$()[0];
+        if (elem) elem.focus();
       }
     }
   },
@@ -37573,7 +38285,7 @@ SC.AlertPane = SC.PanelPane.extend({
           var pane = this.get('pane');
           var blank = SC.BLANK_IMAGE_URL ;
           if(pane.get('icon') == 'blank') context.addClass('plain');
-          context.push('<img src="%@" class="icon %@" />'.fmt(blank, pane.get('icon')));
+          context.push('<img src="'+blank+'" class="icon '+pane.get('icon')+'" />');
           context.begin('h1').text(pane.get('message') || '').end();
           context.push(pane.get('displayDescription') || '');
           context.push(pane.get('displayCaption') || '');
@@ -37861,6 +38573,8 @@ SC.PICKER_POINTER = 'pointer';
 SC.POINTER_LAYOUT = ["perfectRight", "perfectLeft", "perfectTop", "perfectBottom"];
 
 /**
+  @class
+
   Displays a non-modal, self anchor positioned picker pane.
 
   The default way to use the picker pane is to simply add it to your page like this:
@@ -37982,7 +38696,6 @@ SC.PickerPane = SC.PalettePane.extend({
     if (preferType) this.set('preferType',preferType) ;
     if (preferMatrix) this.set('preferMatrix',preferMatrix) ;
     this.endPropertyChanges();
-
     this.positionPane();
     this.append();
   },
@@ -38042,12 +38755,16 @@ SC.PickerPane = SC.PalettePane.extend({
 
   /** @private
     This method will return ret (x, y, width, height) from a rectangular element
+    Notice: temp hack for calculating visiable anchor height by counting height 
+    up to window bottom only. We do have 'clippingFrame' supported from view.
+    But since our anchor can be element, we use this solution for now.
   */  
   computeAnchorRect: function(anchor) {
     var ret = SC.viewportOffset(anchor); // get x & y
     var cq = SC.$(anchor);
+    var wsize = SC.RootResponder.responder.computeWindowSize() ;
     ret.width = cq.outerWidth();
-    ret.height = cq.outerHeight();
+    ret.height = (wsize.height-ret.y) < cq.outerHeight() ? (wsize.height-ret.y) : cq.outerHeight();
     return ret ;
   },
 
@@ -38056,7 +38773,7 @@ SC.PickerPane = SC.PalettePane.extend({
   */  
   fitPositionToScreen: function(preferredPosition, picker, anchor) {
     // get window rect.
-    var wsize = this.get('currentWindowSize') || SC.RootResponder.responder.computeWindowSize() ;
+    var wsize = SC.RootResponder.responder.computeWindowSize() ;
     var wret = { x: 0, y: 0, width: wsize.width, height: wsize.height } ;
     picker.x = preferredPosition.x ; picker.y = preferredPosition.y ;
 
@@ -38064,8 +38781,7 @@ SC.PickerPane = SC.PalettePane.extend({
       switch(this.preferType) {
         case SC.PICKER_MENU:
           // apply default + menu re-position rule
-          picker = this.fitPositionToScreenDefault(wret, picker, anchor) ;
-          picker = this.fitPositionToScreenMenu(wret, picker) ;
+          picker = this.fitPositionToScreenMenu(wret, picker, this.get('isSubMenu')) ;
           break;
         case SC.PICKER_POINTER:
           // apply pointer re-position rule
@@ -38127,20 +38843,28 @@ SC.PickerPane = SC.PalettePane.extend({
   },
 
   /** @private
-    re-position rule optimized for Menu to enforce min left(7px)/right(8px) padding to the window
+    re-position rule optimized for Menu to enforce min left(7px)/right(20px) padding to the window
   */
-  fitPositionToScreenMenu: function(w, f) {
+  fitPositionToScreenMenu: function(w, f, subMenu) {
     // min left/right padding to the window
-    if( (f.x + f.width) > (w.width-9) ) f.x = w.width - f.width - 9;
+    if( (f.x + f.width) > (w.width-20) ) {
+      // sub-menus should be re-anchored to the left of the parent menu
+      if (subMenu) f.x = f.x - (f.width*2);
+      else f.x = w.width - f.width - 20;
+    }
     if( f.x < 7 ) f.x = 7;
-	
-	// if the height of the menu is bigger than the window height resize it.
-	  if( f.height > w.height){
-		  f.y = 15;
-		  f.height = w.height - 35;
-	  }
-	
-	  return f ;    
+    
+    // if the height of the menu is bigger than the window height resize it.
+    if( f.height+f.y+35 >= w.height){
+      if (f.height+50 >= w.height) {
+        f.y = 15;
+        f.height = w.height - 50;
+      } else {
+        f.y += (w.height - (f.height+f.y+35));
+      }
+    }
+
+    return f ;    
   },
 
   /** @private
@@ -38231,12 +38955,12 @@ SC.PickerPane = SC.PalettePane.extend({
     var ret = arguments.callee.base.apply(this,arguments);
     if (context.needsContent) {
       if (this.get('preferType') == SC.PICKER_POINTER) {
-        context.push('<div class="sc-pointer %@" style="margin-top: %@px"></div>'.fmt(this.get('pointerPos'), this.get('pointerPosY')));
+        context.push('<div class="sc-pointer '+this.get('pointerPos')+'" style="margin-top: '+this.get('pointerPosY')+'px"></div>');
       }
     } else {
       var el = this.$('.sc-pointer');
-      el.attr('class', "sc-pointer %@".fmt(this.get('pointerPos')));
-      el.attr('style', "margin-top: %@px".fmt(this.get('pointerPosY')));
+      el.attr('class', "sc-pointer "+this.get('pointerPos'));
+      el.attr('style', "margin-top: "+this.get('pointerPosY')+"px");
     }
     return ret ;
   },
@@ -38266,7 +38990,6 @@ SC.PickerPane = SC.PalettePane.extend({
     Invoked by the root responder. Re-position picker whenever the window resizes. 
   */
   windowSizeDidChange: function(oldSize, newSize) {
-    arguments.callee.base.apply(this,arguments);
     this.positionPane();
   }
 
@@ -38321,25 +39044,18 @@ SC.SeparatorView = SC.View.extend(
 sc_require('views/button') ;
 sc_require('views/separator') ;
 
-// Constants
-SC.BENCHMARK_MENU_ITEM_RENDER = YES ;
-
 /**
-  @class SC.MenuItemView
+  @class
+
+  An SC.MenuItemView is created for every item in a menu.
+
   @extends SC.ButtonView
   @since SproutCore 1.0
 */
-SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
+SC.MenuItemView = SC.View.extend( SC.ContentDisplay,
 /** @scope SC.MenuItemView.prototype */{
-  
-  
-  classNames: ['sc-menu-item'],
-  tagName: 'div',
 
-  /**
-    This provides the parentPane for the current MenuItemView
-  */
-  parentPane: null,
+  classNames: ['sc-menu-item'],
   
   /** 
     @private
@@ -38365,115 +39081,70 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @type Boolean
   */
   isSubMenuViewVisible: null,
-  
-  /**
-    This will return true if the menu item is a separator.
 
-    @type Boolean
-  */
-  isSeparator: NO,
-
-  /**
-    (displayDelegate) The name of the property used for label itself   
-    If null, then the content object itself will be used.
-    
-    @readOnly
-    @type String
-  */
-  contentValueKey: null,
-
-  /**
-    (displayDelegate) The name of the property used to determine if the menu 
-    item is a branch or leaf (i.e. if the branch arow should be displayed to 
-    the right edge.)   
-    If this is null, then the branch arrow will be collapsed.
-
-    @readOnly
-    @type String
-  */
-  contentIsBranchKey: null,
-
-  /**
-    The name of the property which will set the image for the short cut keys
-
-    @readOnly
-    @type String
-  */
-  shortCutKey: null,
-
-  /**
-    The name of the property which will set the icon image for the menu item.
-
-    @readOnly
-    @type String
-  */
-  contentIconKey: null,
-
-  /**
-    The name of the property which will set the checkbox image for the menu 
-    item.
-
-    @readOnly
-    @type String
-  */
-  contentCheckboxKey: 'checkbox',
-
-  /**
-    The name of the property which will set the checkbox image for the menu 
-    item.
-
-    @readOnly
-    @type String
-  */
-  contentActionKey: null,
-  
-  
-  /**
-    Describes the width of the menu item    
-    Default it to 100
-
-    @type Integer
-  */
-  itemWidth: 100,
-  
-  /**
-    Describes the height of the menu item    
-    Default it to 20
-
-    @type Integer
-  */
-  itemHeight: 20,
-  
-
-  /**
-    Sub Menu Items 
-    If this is null then there is no branching
-
-    @type MenuPane
-  */
-  subMenu: null,
-  
   /**
     This property specifies whether this menu item is currently in focus
 
     @type Boolean
   */
   hasMouseExited: NO,
-  
-  /**
-    Anchor for the Parent Menu of which the Menu Item is part of
 
-    @type ButtonView/MenuItemView
+  /**
+    Because we don't know what keys to observe for display changes
+    until we're instantiated, we explicitly set contentDisplayProperties
+    on init.
+    
+    @private
   */
-  anchor: null,
+  init: function() {
+    var menu = this.getPath('parentMenu.rootMenu'),
+    keyArray = menu.menuItemKeys.map(SC._menu_fetchKeys, menu);
+
+    this.set('contentDisplayProperties', keyArray);
+    return arguments.callee.base.apply(this,arguments);
+  },
+
+  /**
+    This menu item's submenu, if it exists.
+
+    @type SC.MenuView
+  */
+  subMenu: function() {
+    var content = this.get('content'), menuItems, parentMenu;
+    
+    if (!content) return null;
+    
+    parentMenu = this.get('parentMenu');
+    menuItems = content.get(parentMenu.itemSubMenuKey );
+    if (menuItems) {
+      if (SC.kindOf(menuItems, SC.MenuPane)) {
+        menuItems.set('isModal', NO);
+        menuItems.set('isSubMenu', YES);
+        menuItems.set('parentMenu', parentMenu);
+        return menuItems;
+      } else {
+        return SC.MenuPane.create({
+          layout: { width: 200 },
+          items: menuItems,
+          isModal: NO,
+          isSubMenu: YES,
+          parentMenu: parentMenu
+        });
+      }
+    }
+    
+    return null;
+  }.property('content').cacheable(),
   
   /**
-    This will hold the properties that can trigger a change in the diplay
+    Whether or not this menu item has a submenu.
+    
+    @type Boolean
   */
-  displayProperties: ['contentValueKey', 'contentIconKey', 'shortCutKey',
-                  'contentIsBranchKey', 'itemHeight',
-                   'subMenu','isEnabled','content'],
-  contentDisplayProperties: 'title value icon separator action checkbox shortcut branchItem subMenu'.w(),
+  hasSubMenu: function() {
+    return !!this.get('subMenu');
+  }.property('subMenu').cacheable(),
+  
   /**
     Fills the passed html-array with strings that can be joined to form the
     innerHTML of the receiver element.  Also populates an array of classNames
@@ -38484,89 +39155,52 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @returns {void}
   */
   render: function(context, firstTime) {
-    var bkey ;
-    if (SC.BENCHMARK_MENU_ITEM_RENDER) {
-      bkey = '%@.render'.fmt(this) ;
-      SC.Benchmark.start(bkey) ;
-    }
     var content = this.get('content') ;
-    var del = this.displayDelegate ;
     var key, val ;
-    var ic ;
-    var menu = this.parentMenu() ;
+    var menu = this.get('parentMenu');
     var itemWidth = this.get('itemWidth') || menu.layout.width ;
     var itemHeight = this.get('itemHeight') || 20 ;
-    this.set('itemWidth',itemWidth) ;
-    this.set('itemHeight',itemHeight) ;
-    
-    if(!this.get('isEnabled')) context.addClass('disabled') ;
-    //handle separator    
-    ic = context.begin('a').attr('href', 'javascript: ;') ;   
-    key = this.getDelegateProperty('isSeparatorKey', del) ;
-    val = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
-    if (val) {
-      ic.push("<span class='separator'></span>") ;
-      context.addClass('disabled') ;
+    this.set('itemWidth',itemWidth);
+    this.set('itemHeight',itemHeight);
+
+    context = context.begin('a');
+
+    if (content.get(menu.itemSeparatorKey)) {
+      context.push('<span class="separator"></span>');
+      context.addClass('disabled');
     } else {
-      // handle checkbox
-      key = this.getDelegateProperty('contentCheckboxKey', del) ;
-      if (key) {
-        val = content ? (content.get ? content.get(key) : content[key]) : NO ;
-        if (val) {
-          ic.begin('div').addClass('checkbox').end() ;
-        }
+      val = content.get(menu.itemIconKey);
+      if (val) {
+        this.renderImage(context, val);
+        context.addClass('has-icon');
       }
 
-      // handle image -- always invoke
-      key = this.getDelegateProperty('contentIconKey', del) ;
-      val = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
-      if(val && SC.typeOf(val) !== SC.T_STRING) val = val.toString() ;
-      if(val) {
-        this.renderImage(ic, val) ;
-        ic.addClass('hasIcon') ;
+      val = this.getContentProperty('itemTitleKey') || '';
+      if (SC.typeOf(val) !== SC.T_STRING) val = val.toString();
+      // TODO check localization setting
+      this.renderLabel(context, val.loc());
+
+      if (this.getContentProperty('itemCheckboxKey')) {
+        context.push('<div class="checkbox"></div>');
       }
 
-      // handle label -- always invoke
-      key = this.getDelegateProperty('contentValueKey', del) ;
-      val = (key && content) ? (content.get ? content.get(key) : content[key]) : content ;
-      if (val && SC.typeOf(val) !== SC.T_STRING) val = val.toString() ;
-      this.renderLabel(ic, val||'') ;
+      if (this.get('hasSubMenu')) {
+        this.renderBranch(context);
+      }
 
-      // handle branch
-      key = this.getDelegateProperty('contentIsBranchKey', del) ;
-      val = (key && content) ? (content.get ? content.get(key) : content[key]) : NO ;
-      if (val) {       
-        this.renderBranch(ic, val) ;
-        ic.addClass('has-branch') ;
-      } else { // handle action
-        
-        key = this.getDelegateProperty('action', del) ;
-        val = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
-        if (val && isNaN(val)) this.set('action', val) ;
-
-        key = this.getDelegateProperty('target', del) ;
-        val = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
-        if (val && isNaN(val)) this.set('target', val) ;
-
-        // handle short cut keys
-        if (this.getDelegateProperty('shortCutKey', del)) {
-          key = this.getDelegateProperty('shortCutKey', del) ;
-          val = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
-          if (val) {
-            this.renderShortcut(ic, val) ;
-            ic.addClass('shortcutkey') ;
-          }
-        }
+      val = this.getContentProperty('itemShortCutKey');
+      if (val) {
+        this.renderShortcut(context, val);
       }
     }
-    ic.end() ;
-    if (SC.BENCHMARK_MENU_ITEM_RENDER) SC.Benchmark.end(bkey) ;
+
+    context = context.end();
   },
-      
-  /** 
-   Generates the image used to represent the image icon. override this to 
+
+  /**
+   Generates the image used to represent the image icon. override this to
    return your own custom HTML
- 
+
    @param {SC.RenderContext} context the render context
    @param {String} the source path of the image
    @returns {void}
@@ -38604,15 +39238,11 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
    return your own custom HTML
  
    @param {SC.RenderContext} context the render context
-   @param {Boolean} hasBranch YES if the item has a branch
    @returns {void}
   */
 
-  renderBranch: function(context, hasBranch) {
-
-    var a = '>' ;
-    var url = SC.BLANK_IMAGE_URL;
-    context.push('<span class= "hasBranch">'+a+'</span>') ; 
+  renderBranch: function(context) {
+    context.push('<span class="has-branch"></span>') ;
   },
 
   /** 
@@ -38628,49 +39258,14 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
   },
 
   /**
-    This method is used to fetch the Menu Item View to which the
-    Parent Menu Pane is anchored 
-    to
-
-    @param {}
-    @returns MenuPane
-  */
-  getAnchor: function() {
-    var anchor = this.get('anchor') ;
-    if(anchor && anchor.kindOf && anchor.kindOf(SC.MenuItemView)) return anchor ;
-    return null ;
-  },
-  
-  isCurrent: NO,
-
-  /**
     This method checks if the menu item is a separator.
 
     @param {}
     @returns Boolean
-  */	  
-  isSeparator: function() {
-    var content = this.get('content') ;
-    var del = this.displayDelegate ;
-    var key = this.getDelegateProperty('isSeparatorKey', del) ;
-    var val = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
-    if (val) return YES ;
-    return NO ;
-  },
-  
-  /**
-    Checks if a menu is a sub menu, during branching.
-    
-    @param {}
-    @returns MenuPane
   */
-  isSubMenuAMenuPane: function() {
-    var content = this.get('content') ;
-    var subMenu = content.get('subMenu') ;
-    if(subMenu && subMenu.kindOf(SC.MenuPane)) return subMenu ;
-    return NO ;  
-  },
-  
+  isSeparator: function() {
+    return this.getContentProperty('itemSeparatorKey') === YES;
+  }.property('content').cacheable(),
   
   /**
     This method will check whether the current Menu Item is still
@@ -38679,51 +39274,34 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @param {}
     @returns void
   */
-  branching: function() {
-    if(this.get('hasMouseExited')) {
-      this.set('hasMouseExited',NO) ;
-      return ;
-    }
-      this.createSubMenu() ;
-  },
-  
-  /**
-    This method will remove the focus of the current selected menu item.
-
-    @param {}
-  */
-  loseFocus: function() {
-    if(!this.isSubMenuAMenuPane()) {
-      this.set('hasMouseExited',YES) ;
-      this.$().removeClass('focus') ;
-      //this.resignFirstResponder() ;
-    }
-  },
-  
-  /**
-    This method will create the sub Menu with the current Menu Item as anchor
-    
-    @param {}
-    @returns void
-  */
-  createSubMenu: function() {
-    var subMenu = this.isSubMenuAMenuPane() ;
+  showSubMenu: function() {
+    var subMenu = this.get('subMenu') ;
     if(subMenu) {
-      subMenu.set('anchor', this) ;
       subMenu.popup(this,[0,0,0]) ;
-      var context = SC.RenderContext(this) ;
-      context = context.begin(subMenu.get('tagName')) ;
-      subMenu.prepareContext(context, YES) ;
-      context = context.end() ;
-      var menuItemViews = subMenu.get('menuItemViews') ;
-      if(menuItemViews && menuItemViews.length>0) {
-        subMenu.becomeKeyPane();
-      }
     }
   },
   
-  parentMenu: function() {
-    return this.get('parentPane') ;
+  isEnabled: function() {
+    return this.getContentProperty('itemIsEnabledKey') !== NO &&
+           this.getContentProperty('itemSeparatorKey') !== YES;
+  }.property('content.isEnabled').cacheable(),
+
+  title: function() {
+    var ret = this.getContentProperty('itemTitleKey');
+
+    if (ret) {
+      ret = ret.loc();
+    }
+    return ret;
+  }.property('content.title').cacheable(),
+  
+  getContentProperty: function(property) {
+    var content = this.get('content'),
+        menu = this.get('parentMenu');
+    
+    if (content) {
+      return content.get(menu.get(property));
+    }
   },
 
   //..........................................
@@ -38737,38 +39315,57 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     // SproutCore's event system will deliver the mouseUp event to the view
     // that got the mouseDown event, but for menus we want to track the mouse,
     // so we'll do our own dispatching.
-    var parentMenu = this.parentMenu() ;
-    if (parentMenu) {
-      var selectedMenuItem = parentMenu.get('currentSelectedMenuItem') ;
-      if (selectedMenuItem  &&  (this !== selectedMenuItem)) {
-        return selectedMenuItem.tryToPerform('mouseUp', evt) ;
+    var targetMenuItem;
+    
+    targetMenuItem = this.getPath('parentMenu.rootMenu.targetMenuItem');
+
+    if (targetMenuItem) targetMenuItem.performAction();
+    return YES ;
+  },
+
+  performAction: function() {
+    if(!this.get('isEnabled')) return ;
+    var action = this.getContentProperty('itemActionKey'),
+        target = this.getContentProperty('itemTargetKey'),
+        rootMenu = this.getPath('parentMenu.rootMenu'), responder;
+
+    if (this.get('hasSubMenu')) {
+      return;
+    }
+
+    action = (action === undefined) ? rootMenu.get('action') : action;
+    target = (target === undefined) ? rootMenu.get('target') : target;
+
+    this._flashCounter = 0;
+    rootMenu.set('selectedItem', this.get('content'));
+
+    // Legacy support for actions that are functions
+    if (SC.typeOf(action) === SC.T_FUNCTION) {
+      action.apply(target, [rootMenu]);
+    } else {
+      responder = this.getPath('pane.rootResponder') || SC.RootResponder.responder;
+      if (responder) {
+        responder.sendAction(action, target, this, this.get('pane'));
       }
     }
 
-    if (!this.get('isEnabled')) {
-      this.set('hasMouseExited',NO) ;
-      return YES ;
-    }
-    this.set('hasMouseExited',NO) ;
-    var key = this.get('contentCheckboxKey') ;
-    var content = this.get('content') ;
-    if (key) {
-      if (content && content.get(key)) {
-        content.set(key, NO) ;
-      } else if( content.get(key)!== undefined ) {
-        content.set(key, YES) ;
-      }
-      this.displayDidChange();
-    }
-    this._action(evt) ;
-    var anchor = this.getAnchor() ;
-    if(anchor) {
-      anchor.mouseUp(evt) ;
+    this.invokeLater(this.flashHighlight, 25);
+  },
+
+  flashHighlight: function() {
+    var flashCounter = this._flashCounter, layer = this.$();
+    if (flashCounter % 2 === 0) {
+      layer.addClass('focus');
     } else {
-      this.resignFirstResponder() ;
+      layer.removeClass('focus');
     }
-    this.closeParent() ;
-    return YES ;
+
+    if (flashCounter > 2) {
+      this.getPath('parentMenu.rootMenu').remove();
+    } else {
+      this.invokeLater(this.flashHighlight, 50);
+      this._flashCounter++;
+    }
   },
 
   /** @private*/
@@ -38784,31 +39381,13 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @returns Boolean
   */
   mouseEntered: function(evt) {
-    var parentMenu = this.parentMenu() ;
-    this.set('hasMouseExited', NO) ;
-    if(parentMenu) {
-      parentMenu.becomeKeyPane() ;
-      // condition check whether the anchor tag has _isMouseDown or not
-      if(parentMenu.get('anchor')._isMouseDown){
-        var isAnchorMouseDown = parentMenu.getPath('anchor._isMouseDown') ;
-        this.set('isAnchorMouseDown', isAnchorMouseDown) ;
-        if(this.get('isAnchorMouseDown')) {
-          SC.Event.trigger(this.get('layer'), 'mousedown');
-        }
-      }
-    }
-    if (!this.get('isEnabled') && !this.isSeparator()) {
-      if (parentMenu) parentMenu.set('currentSelectedMenuItem', null);
-      return YES ;
-    }
+    var menu = this.get('parentMenu');
+    menu.set('mouseHasEntered', YES);
+    menu.set('currentMenuItem', this);
 
-    var key = this.get('contentIsBranchKey') ;
-    if(key) {
-      var content = this.get('content') ;
-      var val = (key && content) ? (content.get ? content.get(key) : content[key]) : NO ;
-      if(val) this.invokeLater(this.branching(),100) ;
+    if(this.get('hasSubMenu')) {
+      this.invokeLater(this.showSubMenu(),100) ;
     }
-    this.becomeFirstResponder() ;
 	  return YES ;
   },
 
@@ -38818,14 +39397,37 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @returns Boolean
   */
   mouseExited: function(evt) {
-    this.loseFocus() ;
-    var parentMenu = this.parentMenu() ;
-    if(parentMenu) {
-      parentMenu.set('previousSelectedMenuItem', this) ;
+    var subMenu, parentMenu;
+
+    if (this.get('hasSubMenu')) {
+      subMenu = this.get('subMenu');
+      this.invokeLater(this.checkMouseLocation, 200);
+    } else {
+      parentMenu = this.get('parentMenu');
+      
+      if (parentMenu.get('currentMenuItem') === this) {
+        parentMenu.set('currentMenuItem', null);
+      }
     }
+
     return YES ;
   },
+  
+  checkMouseLocation: function() {
+    var subMenu = this.get('subMenu'), parentMenu = this.get('parentMenu'),
+        currentMenuItem, previousMenuItem;
+    if (!subMenu.get('mouseHasEntered')) {
+      currentMenuItem = parentMenu.get('currentMenuItem');
+      if (currentMenuItem === this || currentMenuItem === null) {
+        previousMenuItem = parentMenu.get('previousMenuItem');
 
+        if (previousMenuItem) {
+          previousMenuItem.resignFirstResponder();
+        }
+        subMenu.remove();
+      }
+    }
+  },
 
   /** @private
     Call the moveUp function on the parent Menu
@@ -38833,20 +39435,20 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @returns Boolean
   */
   moveUp: function(sender,evt) {
-    var menu = this.parentMenu() ;
+    var menu = this.get('parentMenu') ;
     if(menu) {
       menu.moveUp(this) ;
     }
     return YES ;
   },
-  
+
   /** @private
     Call the moveDown function on the parent Menu
     
     @returns Boolean
   */
   moveDown: function(sender,evt) {
-    var menu = this.parentMenu() ;
+    var menu = this.get('parentMenu') ;
     if(menu) {
       menu.moveDown(this) ;
     }
@@ -38859,8 +39461,8 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
     @returns Boolean
   */
   moveRight: function(sender,evt) {
-    this.createSubMenu() ;
-    return YES ;
+    this.showSubMenu() ;
+    return YES;
   },
   
   /** @private*/
@@ -38876,7 +39478,7 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
   /** @private*/
   cancel: function(evt) {
     this.loseFocus() ;
-    var menu = this.parentMenu() ;
+    var menu = this.get('parentMenu') ;
     if (menu) menu.remove() ;
     var pane = menu.getPath('anchor.pane') ;
     if (pane) pane.becomeKeyPane() ;
@@ -38886,10 +39488,7 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
   /** @private*/
   didBecomeFirstResponder: function(responder) {
     if (responder !== this) return;
-    if(!this.isSeparator()) {
-      this.$().addClass('focus') ;
-    }
-    var parentMenu = this.parentMenu() ;
+    var parentMenu = this.get('parentMenu') ;
     if(parentMenu) {
       parentMenu.set('currentSelectedMenuItem', this) ;
     }
@@ -38898,8 +39497,7 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
   /** @private*/
   willLoseFirstResponder: function(responder) {
     if (responder !== this) return;
-    this.$().removeClass('focus') ;
-    var parentMenu = this.parentMenu() ;
+    var parentMenu = this.get('parentMenu') ;
     if(parentMenu) {
       parentMenu.set('currentSelectedMenuItem', null) ;
       parentMenu.set('previousSelectedMenuItem', this) ;
@@ -38919,7 +39517,7 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
   */
   closeParent: function() {
     this.$().removeClass('focus') ;
-    var menu = this.parentMenu() ;
+    var menu = this.get('parentMenu') ;
     if(menu) {
       menu.remove() ;
     }
@@ -38942,664 +39540,841 @@ SC.MenuItemView = SC.ButtonView.extend( SC.ContentDisplay,
 sc_require('panes/picker');
 sc_require('views/menu_item');
 
-// Constants
-SC.BENCHMARK_MENU_PANE_RENDER = YES ;
-
 /**
-  @class SC.MenuPane
+  @class
+
+  SC.MenuPane allows you to display a standard menu. Menus appear over other
+  panes, and block input to other views until a selection is made or the pane
+  is dismissed by clicking outside of its bounds.
+
+  You can create a menu pane and manage it yourself, or you can use the
+  SC.SelectButtonView and SC.PopupButtonView controls to manage the menu for
+  you.
+
+  h2. Specifying Menu Items
+
+  The menu pane examines the @items@ property to determine what menu items
+  should be presented to the user.
+
+  In its most simple form, you can provide an array of strings. Every item
+  will be converted into a menu item whose title is the string.
+
+  If you need more control over the menu items, such as specifying a keyboard
+  shortcut, enabled state, custom height, or submenu, you can provide an array
+  of content objects.
+
+  Out of the box, the menu pane has some default keys it uses to get
+  information from the objects. For example, to find out the title of the menu
+  item, the menu pane will ask your object for its @title@ property. If you
+  need to change this key, you can set the @itemTitleKey@ property on the pane
+  itself.
+
+  {{{
+    var menuItems = [
+      { title: 'Menu Item', keyEquivalent: 'ctrl_shift_n' },
+      { title: 'Checked Menu Item', isChecked: YES, keyEquivalent: 'ctrl_a' },
+      { title: 'Selected Menu Item', keyEquivalent: 'backspace' },
+      { isSeparator: YES },
+      { title: 'Menu Item with Icon', icon: 'inbox', keyEquivalent: 'ctrl_m' },
+      { title: 'Menu Item with Icon', icon: 'folder', keyEquivalent: 'ctrl_p' }
+    ];
+
+    var menu = SC.MenuPane.create({
+      items: menuItems
+    });
+  }}}
+
+  h2. Observing User Selections
+
+  To determine when a user clicks on a menu item, you can observe the
+  @selectedItem@ property for changes.
+
   @extends SC.PickerPane
   @since SproutCore 1.0
 */
-SC.MenuPane = SC.PickerPane.extend( 
+SC.MenuPane = SC.PickerPane.extend(
 /** @scope SC.MenuPane.prototype */ {
 
-  menuItemKeys: 'itemTitleKey itemValueKey itemIsEnabledKey itemIconKey itemSeparatorKey itemActionKey itemCheckboxKey itemShortCutKey itemBranchKey itemHeightKey subMenuKey itemKeyEquivalentKey itemTargetKey'.w(),
   classNames: ['sc-menu'],
 
-  tagName: 'div',
-  
-  isModal: YES,
+  // ..........................................................
+  // PROPERTIES
+  //
 
   /**
-    The key that explains whether each item is Enabled. If omitted, no icons 
-    will be displayed.
-
-    @readOnly
-    @type Boolean
-    @default isEnabled
-  */
-  itemIsEnabledKey: "isEnabled",
-  
-  /**
-    The key that contains the title for each item.  If omitted, no icons will
-     be displayed.
-
-    @readOnly
-    @type String
-    @default title
-  */
-  itemTitleKey: 'title',
-
-  /**
-    The array of items to display.  This can be a simple array of strings,
-    objects or hashes.  If you pass objects or hashes, you must also set the
-    various itemKey properties to tell the MenuPane how to extract the
-    information it needs.
+    The array of items to display. This can be a simple array of strings,
+    objects or hashes. If you pass objects or hashes, you can also set the
+    various itemKey properties to tell the menu how to extract the information
+    it needs.
 
     @type String
-  */ 
+  */
   items: [],
 
-  /** 
-    The key that contains the value for each item.  If omitted, no icons will
-    be displayed.
+  /**
+    The default height for each menu item, in pixels.
 
-    @readOnly
-    @type String
-    @default value
-  */
-  itemValueKey: 'value',
+    You can override this on a per-item basis by setting the (by default) @height@ property on your object.
 
-  /** 
-    The key that contains the icon for each item.  If omitted, no icons will
-    be displayed.
-
-    @readOnly
-    @type String
-    @default icon
-  */
-  itemIconKey: 'icon',
-
-  /** 
-    The width for each menu item and ultimately the menu itself.
-
-    @type String
-  */
-  itemWidth: null,
-  
-  /** 
-    The default height for each menu item.
-
-    @type String
+    @type Number
+    @default 20
   */
   itemHeight: 20,
 
-  /** 
-    The height of the menu and ultimately the menu itself.
+  /**
+    The default height for separator menu items.
 
-    @type Integer
-  */
-  menuHeight: null,
-  
-  /** 
-    The height for each menu item and ultimately the menu itself.
+    You can override this on a per-item basis by setting the (by default)
+    @height@ property on your object.
 
-    @readOnly
-    @type String
-    @default height
+    @type Number
+    @default 9
   */
-  itemHeightKey: 'height',
-  
-  /** 
-    The submenu for a menu item if any.
-
-    @readOnly
-    @type String
-    @default subMenu
-  */
-  subMenuKey: 'subMenu',
+  itemSeparatorHeight: 9,
 
   /**
-    If YES, titles will be localized before display.
+    The height of the menu pane.  This is updated every time menuItemViews
+    is recalculated.
+
+    @type Number
+    @isReadOnly
   */
-  localize: YES,
-
-  /** 
-    This key defined which key represents Separator.
-
-    @readOnly
-    @type Boolean
-    @default separator
-  */  
-  itemSeparatorKey: 'separator',
-
-  /** 
-    This key is need to assign an action to the menu item.
-
-    @readOnly
-    @type String
-    @default action
-  */
-  itemActionKey: 'action',
-
-  /** 
-    The key for setting a checkbox for the menu item.
-
-    @readOnly
-    @type String
-    @default checkbox
-  */
-  itemCheckboxKey: 'checkbox',
-
-  /** 
-    The key for setting a branch for the menu item.
-
-    @readOnly
-    @type String
-    @default branchItem
-  */
-  itemBranchKey: 'branchItem',
-  
-  /** 
-    The key for setting a branch for the menu item.
-
-    @readOnly
-    @type String
-    @default shortcut
-  */
-  itemShortCutKey: 'shortcut',
-  
-  /** 
-    The key for setting Key Equivalent for the menu item.
-
-    @readOnly
-    @type String
-    @default keyEquivalent
-  */
-  itemKeyEquivalentKey: 'keyEquivalent',
-  
-  /** 
-    The key for setting Key Equivalent for the menu item.
-
-    @readOnly
-    @type String
-    @default target
-  */
-  itemTargetKey: 'target',
-  
-  /** @private */
-  preferType: SC.PICKER_MENU,
+  menuHeight: 0,
 
   /**
-    Define the current Selected Menu Item.
+    The amount of padding to add to the height of the pane.
 
-    type SC.MenuItemView
+    The first menu item is offset by half this amount, and the other half is
+    added to the height of the menu, such that a space between the top and the
+    bottom is created.
+
+    @type Number
+    @default 0
   */
-  currentSelectedMenuItem : null,
+  menuHeightPadding: 0,
 
   /**
-    Define the current Selected Menu Item.
+    The last menu item to be selected by the user.
 
-    @type SC.MenuItemView
+    You can place an observer on this property to be notified when the user
+    makes a selection.
+
+    @type SC.Object
+    @default null
+    @isReadOnly
   */
-  previousSelectedMenuItem : null,
+  selectedItem: null,
 
   /**
-    The anchor for this Menu
+    The view class to use when creating new menu item views.
 
-    @type ButtonView/MenuItemView
-  */
-  anchor: null,
-  
-  /** @private
+    The menu pane will automatically create an instance of the view class you
+    set here for each item in the @items@ array. You may provide your own
+    subclass for this property to display the customized content.
 
-    Array of Display Items which is produced by displayItems function
-  */
-  displayItemsArray: null,
-  
-  /**
-    Set of Menu Item Views created from items array
-    
-    @type SC.Array
-  */
-  menuItemViews: [],
-
-  /** 
-    Example view which will be used to create the Menu Items
-    
     @default SC.MenuItemView
     @type SC.View
   */
   exampleView: SC.MenuItemView,
-  
-  /**
-    Control Size for the Menu Item
-  */
-  controlSize: SC.REGULAR_CONTROL_SIZE,
-  
-  /**
-    Padding to add to the minHeight of the pane.
-  */
-  menuHeightPadding: 0,
 
-  createChildViews: function() {
-    var childViews = [] , scroll, items, cv, t;
-    scroll = SC.MenuScrollView;
-    
-    cv = this.get('menuItemViews');
-    t = SC.View.design({ 
-      layout:{ top: 0, left: 0, minHeight : this.get('menuHeight') },
-      classNames: 'menuContainer', 
-      childViews: cv
-    });
-    this.set('itemWidth',this.get('layout').width || 100) ; 
-    scroll = this.createChildView(scroll, { 
-      borderStyle: SC.BORDER_NONE, 
-      contentView: t
-    });
-    this.childViews = [scroll] ;
-  },
-  
   /**
-    @private
-    
-    Overwrite the popup function of the pickerPane
+    The view or element to which the menu will anchor itself.
+
+    When the menu pane is shown, it will remain anchored to the view you
+    specify, even if the window is resized. You should specify the anchor as a
+    parameter when calling @popup()@, rather than setting it directly.
+
+    @type SC.View
+    @isReadOnly
   */
-  popup: function(anchorViewOrElement, preferMatrix) {  
+  anchor: null,
+
+  /**
+    YES if this menu pane was generated by a parent SC.MenuPane.
+
+    @type Boolean
+    @isReadOnly
+  */
+  isSubMenu: NO,
+
+  /**
+    Whether the title of menu items should be localized before display.
+
+    @type Boolean
+    @default YES
+  */
+  localize: YES,
+
+  // ..........................................................
+  // METHODS
+  //
+
+  /**
+    Makes the menu visible and adds it to the HTML document.
+
+    If you provide a view or element as the first parameter, the menu will
+    anchor itself to the view, and intelligently reposition itself if the
+    contents of the menu exceed the available space.
+
+    @param  SC.View|Rect  anchorViewOrElement the view or element to which the menu
+    should anchor. May also be specified as a rect relative to the viewport.
+    @param preferMatrix The prefer matrix used to position the
+    pane. (optional)
+  */
+  popup: function(anchorViewOrElement, preferMatrix) {
     var anchor = anchorViewOrElement.isView ? anchorViewOrElement.get('layer') : anchorViewOrElement;
     this.beginPropertyChanges();
-    var it = this.get('displayItems');
     this.set('anchorElement',anchor) ;
     this.set('anchor',anchorViewOrElement);
     this.set('preferType',SC.PICKER_MENU) ;
-    if(preferMatrix) this.set('preferMatrix',preferMatrix) ;
-    
+    if (preferMatrix) this.set('preferMatrix',preferMatrix) ;
+
     this.endPropertyChanges();
-    this.positionPane() ;
-    this.append() ;
+    this.adjust('height', this.get('menuHeight'));
+    this.positionPane();
+    this.append();
   },
 
   /**
-    This computed property is generated from the items array
+    Removes the menu from the screen.
 
-    @property
-    @type {String}
+    @returns {SC.MenuPane} receiver
   */
-  displayItems: function() {
-    var items = this.get('items') ,
-      loc = this.get('localize') ,
-      keys = null, itemType, cur ,
-      ret = [], rel,
-      max = items.get('length') ,
-      idx, item ,
-      fetchKeys = SC._menu_fetchKeys ,
-      fetchItem = SC._menu_fetchItem ,
-      menuHeight = this.get('menuHeightPadding') ;
-    // loop through items and collect data
-    for (idx = 0; idx < max; ++idx) {
-      item = items.objectAt(idx) ;
-      if (SC.none(item)) continue ;
-      itemType = SC.typeOf(item) ;
-      rel = ret.length;
-      if (itemType === SC.T_STRING) {
-        ret[rel] = SC.Object.create({ title: item.humanize().titleize(),   
-	                        value: item, isEnabled: YES, icon: null, 
-	                        isSeparator: null, action: null, isCheckbox: NO, 
-	                        menuItemNumber: idx, isShortCut: NO, isBranch: NO,
-	                        itemHeight: this.get('itemHeight'), subMenu: null,keyEquivalent: null,
-	                        target:null });
-        menuHeight = menuHeight+this.get('itemHeight') ;
-      } else if (itemType !== SC.T_ARRAY) {
-          if (keys === null) keys = this.menuItemKeys.map(fetchKeys, this) ;
-          cur = keys.map(fetchItem, item) ;
-          cur[cur.length] = idx ;
-          if (!keys[0] && item.toString) cur[0] = item.toString() ;
-          if (!keys[1]) cur[1] = item ;
-          if (!keys[2]) cur[2] = YES ;
-          if (!cur[9]) cur[9] = this.get('itemHeight') ;
-          if (cur[4]) cur[9] = 9 ;
-          menuHeight = menuHeight+cur[9] ;
-          if (loc && cur[0]) cur[0] = cur[0].loc() ;
-          ret[rel] = SC.Object.create({ title: cur[0], value: cur[1],
-                                              isEnabled: cur[2], icon: cur[3], 
-                                              isSeparator: cur[4]||NO , action: cur[5],
-                                              isCheckbox: cur[6], isShortCut: cur[7],
-                                              menuItemNumber: idx, isBranch: cur[8],
-                                              itemHeight: cur[9], subMenu: cur[10], 
-                                              keyEquivalent: cur[11], target: cur[12] }) ;                         
-      }
-    }
-    this.set('menuHeight', menuHeight);
-    this.set('displayItemsArray',ret);
-    this.generateMenuItems(ret);
-    return ret;
-  }.property('items').cacheable(),
-
-  /**
-    If the items array itself changes, add/remove observer on item...
-  */
-  itemsDidChange: function() {
-    if (this._items) {
-      this._items.removeObserver('[]', this, this.itemContentDidChange) ;
-    }
-    this._items = this.get('items') ;
-    if (this._items) {
-      this._items.addObserver('[]', this, this.itemContentDidChange) ;
-    }
-    this.itemContentDidChange() ;
-  }.observes('items'),
-
-  /** 
-    Invoked whenever the item array or an item in the array is changed.  This 
-    method will reginerate the list of items.
-  */
-  itemContentDidChange: function() {
-    this.notifyPropertyChange('displayItems') ;
+  remove: function() {
+    this.set('currentMenuItem', null);
+    this.closeOpenMenus();
+    this.resignKeyPane();
+    return arguments.callee.base.apply(this,arguments);
   },
 
   // ..........................................................
-  // RENDERING/DISPLAY SUPPORT
-  // 
-  displayProperties: ['displayItems', 'value', 'controlSize'],
+  // ITEM KEYS
+  //
 
   /**
-    The render function which depends on the displayItems and value
+    The name of the property that contains the title for each item.
+
+    @type String
+    @default "title"
+    @commonTask Menu Item Properties
   */
-  render: function(context, firstTime) {
-    if (SC.BENCHMARK_MENU_PANE_RENDER) {
-      var bkey = '%@.render'.fmt(this) ;
-      SC.Benchmark.start(bkey);
-    }
-    
-    arguments.callee.base.apply(this,arguments);
-    
-    if (firstTime) {
-      if(!this.get('isEnabled')) return ;
-      context.addStyle('text-align', 'center') ;
-    }
-    
-    if (SC.BENCHMARK_MENU_PANE_RENDER) SC.Benchmark.end(bkey) ;
+  itemTitleKey: 'title',
+
+  /**
+    The name of the property that determines whether the item is enabled.
+
+    @type String
+    @default "isEnabled"
+    @commonTask Menu Item Properties
+  */
+  itemIsEnabledKey: 'isEnabled',
+
+  /**
+    The name of the property that contains the value for each item.
+
+    @type String
+    @default "value"
+    @commonTask Menu Item Properties
+  */
+  itemValueKey: 'value',
+
+  /**
+    The name of the property that contains the icon for each item.
+
+    @type String
+    @default "icon"
+    @commonTask Menu Item Properties
+  */
+  itemIconKey: 'icon',
+
+  /**
+    The name of the property that contains the height for each item.
+
+    @readOnly
+    @type String
+    @default "height"
+    @commonTask Menu Item Properties
+  */
+  itemHeightKey: 'height',
+
+  /**
+    The name of the property that contains an optional submenu for each item.
+
+    @type String
+    @default "subMenu"
+    @commonTask Menu Item Properties
+  */
+  itemSubMenuKey: 'subMenu',
+
+  /**
+    The name of the property that determines whether the item is a menu
+    separator.
+
+    @type String
+    @default "separator"
+    @commonTask Menu Item Properties
+  */
+  itemSeparatorKey: 'separator',
+
+  /**
+    The name of the property that contains the target for the action that is triggered when the user clicks the menu item.
+
+    Note that this property is ignored if the menu item has a submenu.
+
+    @type String
+    @default "target"
+    @commonTask Menu Item Properties
+  */
+  itemTargetKey: 'target',
+
+  /**
+    The name of the property that contains the action that is triggered when
+    the user clicks the menu item.
+
+    Note that this property is ignored if the menu item has a submenu.
+
+    @type String
+    @default "action"
+    @commonTask Menu Item Properties
+  */
+  itemActionKey: 'action',
+
+  /**
+    The name of the property that determines whether the menu item should
+    display a checkbox.
+
+    @type String
+    @default "checkbox"
+    @commonTask Menu Item Properties
+  */
+  itemCheckboxKey: 'checkbox',
+
+  /**
+    The name of the property that contains the shortcut to be displayed.
+
+    The shortcut should communicate the keyboard equivalent to the user.
+
+    @type String
+    @default "shortcut"
+    @commonTask Menu Item Properties
+  */
+  itemShortCutKey: 'shortcut',
+
+  /**
+    The name of the property that contains the key equivalent of the menu
+    item.
+
+    The action of the menu item will be fired, and the menu pane's
+    @selectedItem@ property set to the menu item, if the user presses this
+    key combination on the keyboard.
+
+    @type String
+    @default "keyEquivalent"
+    @commonTask Menu Item Properties
+  */
+  itemKeyEquivalentKey: 'keyEquivalent',
+
+  /**
+    The array of keys used by SC.MenuItemView when inspecting your menu items
+    for display properties.
+
+    @private
+    @isReadOnly
+    @property Array
+  */
+  menuItemKeys: 'itemTitleKey itemValueKey itemIsEnabledKey itemIconKey itemSeparatorKey itemActionKey itemCheckboxKey itemShortCutKey itemBranchKey itemHeightKey subMenuKey itemKeyEquivalentKey itemTargetKey'.w(),
+
+  // ..........................................................
+  // INTERNAL PROPERTIES
+  //
+
+  /** @private */
+  preferType: SC.PICKER_MENU,
+
+  /**
+    Create a modal pane beneath the menu that will prevent any mouse clicks
+    that fall outside the menu pane from triggering an inadvertent action.
+
+    @type Boolean
+    @private
+  */
+  isModal: YES,
+
+  /**
+    The view that contains the MenuItemViews that are visible on screen.
+
+    This is created and set in createChildViews.
+
+    @property SC.View
+    @private
+  */
+  _menuView: null,
+
+  // ..........................................................
+  // INTERNAL METHODS
+  //
+
+  /**
+    Because panes themselves do not receive key events, we need to set the
+    pane's defaultResponder to itself. This way key events can be interpreted
+    in keyUp.
+
+    @private
+    @returns {SC.MenuPane} receiver
+  */
+  init: function() {
+    var ret = arguments.callee.base.apply(this,arguments);
+    this.set('defaultResponder', this);
+
+    return ret;
   },
 
   /**
-    This method is used to observe the menuHeight and set the layout accordingly
-    and position the pane.
-    
-    @observes menuHeight
+    Creates the child scroll view, and sets its contentView to a new
+    view.  This new view is saved and managed by the SC.MenuPane,
+    and contains the visible menu items.
+
+    @private
+    @returns {SC.View} receiver
   */
-  menuHeightObserver: function() {
-    var height = this.layout.height ;
-    var menuHeight = this.get('menuHeight') ; 
-    if( height !== menuHeight) {
-      this.adjust('height',menuHeight).updateLayout() ;
-    }
-  }.observes('menuHeight'),
-  
+  createChildViews: function() {
+    var scroll, menuView, menuItemViews;
+
+    scroll = this.createChildView(SC.MenuScrollView, {
+      borderStyle: SC.BORDER_NONE
+    });
+
+    menuView = this._menuView = SC.View.create();
+    menuItemViews = this.get('menuItemViews');
+    menuView.set('layout', { top: 0, left: 0, height : this.get('menuHeight')});
+    menuView.replaceAllChildren(menuItemViews);
+    scroll.set('contentView', menuView);
+
+    this.childViews = [scroll];
+
+    return this;
+  },
+
   /**
-    Actually generates the menu HTML for the display items.  This method 
-    is called the first time a view is constructed and any time the display
-    items change thereafter.  This will construct the HTML but will not set
-    any "transient" states such as the global isEnabled property or selection.
+    The array of child menu item views that compose the menu.
+
+    This computed property parses @displayItems@ and constructs an SC.MenuItemView (or whatever class you have set as the @exampleView@) for every item.
+
+    @property
+    @type Array
+    @readOnly
   */
-  generateMenuItems: function(items) {
-    if(!this.get('isEnabled')) return ;
-    var item, itemAction, menuItemNumber, itemView, itemHeight, itemWidth, 
-      menuItemViews = [], len, content, idx;
-    len = items.length ;
-    content = SC.makeArray(items) ;
-    for (idx = 0; idx < len; ++idx) {
+  menuItemViews: function() {
+    var views = [], items = this.get('displayItems'),
+        exampleView = this.get('exampleView'), item, view,
+        height, heightKey, separatorKey, defaultHeight, separatorHeight,
+        menuHeight, menuHeightPadding, keyEquivalentKey, keyEquivalent,
+        keyArray, idx,
+        len;
+
+    if (!items) return views; // return an empty array
+
+    heightKey = this.get('itemHeightKey');
+    separatorKey = this.get('itemSeparatorKey');
+    defaultHeight = this.get('itemHeight');
+    keyEquivalentKey = this.get('itemKeyEquivalentKey');
+    separatorHeight = this.get('itemSeparatorHeight');
+
+    menuHeightPadding = Math.floor(this.get('menuHeightPadding')/2);
+    menuHeight = menuHeightPadding;
+
+    keyArray = this.menuItemKeys.map(SC._menu_fetchKeys, this);
+
+    len = items.get('length');
+    for (idx = 0; idx < len; idx++) {
       item = items[idx];
-      itemAction = item.get('action') ;
-      menuItemNumber = item.get('menuItemNumber') ;
-      itemHeight = item.get('itemHeight') ;
-      itemWidth = this.get('itemWidth') ;
-      itemView = this.createChildView(
-        this.exampleView, {
-          owner : itemView,
-          displayDelegate : itemView,
-          parentPane: this,
-          anchor : this.get('anchor'),
-          isVisible : YES,
-          contentValueKey : 'title',
-          contentIconKey : 'icon',
-          contentCheckboxKey: this.itemCheckboxKey,
-          contentIsBranchKey :'branchItem',  
-          isSeparatorKey : 'separator',
-          shortCutKey : 'shortCut',  
-          action : itemAction,
-          target : item.get('target'),
-          layout : { top: 0, left: 0, width: itemWidth, height: itemHeight },
-          isEnabled : item.get('isEnabled'),
-          itemHeight : itemHeight,
-          itemWidth : itemWidth,
-          keyEquivalent : item.get('keyEquivalent'),
-          controlSize: this.get('controlSize'),
-          content : SC.Object.create({
-            title : item.get('title'),
-            value : item.get('value'),
-            icon : item.get('icon'),
-            separator : item.get('isSeparator'),
-            action : itemAction,
-            checkbox : item.get('isCheckbox'),
-            shortCut : item.get('isShortCut'),
-            branchItem : item.get('isBranch'),
-            subMenu : item.get('subMenu')
-          }),
-        rootElementPath : [menuItemNumber]
+      height = item.get(heightKey);
+      if (!height) {
+        height = item.get(separatorKey) ? separatorHeight : defaultHeight;
+      }
+      view = this._menuView.createChildView(exampleView, {
+        layout: { height: height, top: menuHeight },
+        contentDisplayProperties: keyArray,
+        content: item,
+        parentMenu: this
       });
-      menuItemViews.push(itemView) ;
-    }
-    var contentV = this.childViews[0].contentView;
-    contentV.replaceAllChildren(menuItemViews);
-    contentV.adjust('minHeight', this.get('menuHeight'));
-    this.set('menuItemViews',menuItemViews) ;
-  },
-  
-  
-  
-  
-  /**
-    Observes the PreviousSelectedMenuItem and clears the submenu 
-    for that item.
-    
-    @returns void
-  */
-  previousSelectedMenuItemObserver: function(){
-    var previousSelectedMenuItem = this.get('previousSelectedMenuItem') ;
-    if(previousSelectedMenuItem) {
-      var subMenu = previousSelectedMenuItem.isSubMenuAMenuPane() ;
-      if(subMenu) subMenu.remove() ;
-    }
-  }.observes('previousSelectedMenuItem'),
-  
-  /**
-    This function returns whether the anchor is of type of MenuItemView
-    
-    @returns Boolean
-  */
-  isAnchorMenuItemType: function() {
-    var anchor = this.get('anchor') ;
-    return (anchor && anchor.kindOf && anchor.kindOf(SC.MenuItemView)) ;
-  },
-  
-  //..........................................................
-  // mouseEvents and keyBoard Events handling
-  //..........................................................
+      views[idx] = view;
+      menuHeight += height;
 
-  /**
-    Perform actions equivalent for the keyBoard Shortcuts
-
-    @param {String} keystring
-    @param {SC.Event} evt
-    @returns {Boolean}  YES if handled, NO otherwise
-  */
-  performKeyEquivalent: function(keyString,evt) {
-    var items, len, menuItems, item, keyEquivalent, 
-        action, isEnabled, target, idx;
-    if(!this.get('isEnabled')) return NO ;
-    this.displayItems() ;
-
-    // Make sure we redraw the menu items if they've changed
-    SC.RunLoop.begin().end();
-
-    items = this.get('displayItemsArray') ;
-    if (!items) return NO;
-
-    // handling esc key
-    if (keyString === 'escape') {
-      this.remove() ;
-      var pane = this.getPath('anchor.pane') ;
-      if (pane) pane.becomeKeyPane() ;
-    }
-
-    len = items.length ;
-    for(idx=0; idx<len; ++idx) {
-      item          = items[idx] ;
-      keyEquivalent = item.get('keyEquivalent') ;
-      action        = item.get('action') ;
-      isEnabled     = item.get('isEnabled') ;
-      target        = item.get('target') || this ;
-      if(keyEquivalent == keyString && isEnabled) {
-        var retVal = SC.RootResponder.responder.sendAction(action,target);
-        this.remove();
-        return retVal;
+      keyEquivalent = item.get(keyEquivalentKey);
+      if (keyEquivalent) {
+        this._keyEquivalents[keyEquivalent] = view;
       }
     }
-    return NO ;
+
+
+    this.set('menuHeight', menuHeight+menuHeightPadding);
+    return views;
+  }.property('displayItems').cacheable(),
+
+  /**
+    An associative array of the shortcut keys. The key is the shortcut in the
+    form 'ctrl_z', and the value is the menu item of the action to trigger.
+
+    @private
+  */
+  _keyEquivalents: { },
+
+  /**
+    If this is a submenu, this property corresponds to the
+    top-most parent menu. If this is the root menu, it returns
+    itself.
+
+    @type SC.MenuPane
+    @isReadOnly
+    @property
+  */
+  rootMenu: function() {
+    if (this.get('isSubMenu')) return this.getPath('parentMenu.rootMenu');
+    return this;
+  }.property().cacheable(),
+
+  /**
+    If the window resizes, we need to make sure that the height of the pane expands to fill the viewport as much as possible.
+
+    @private
+  */
+  windowSizeDidChange: function(oldSize, newSize) {
+    this.remove();
+    return arguments.callee.base.apply(this,arguments);
   },
-  
+
+  /**
+    Returns an array of normalized display items.
+
+    Because the items property can be provided as either an array of strings,
+    or an object with key-value pairs, or an exotic mish-mash of both, we need
+    to normalize it for our display logic.
+
+    If an @items@ member is an object, we can assume it is formatted properly
+    and leave it as-is.
+
+    If an @items@ member is a string, we create a hash with the title value
+    set to that string, and some sensible defaults for the other properties.
+
+    As a last resort, if an @items@ member is an array, we have a legacy
+    handler that converts the array into a hash. This behavior is deprecated
+    and is not guaranteed to be supported in the future.
+
+    A side effect of running this computed property is that the menuHeight
+    property is updated.
+
+    @displayItems@ should never be set directly; instead, set @items@ and
+    @displayItems@ will update automatically.
+
+    @property
+    @type Array
+    @isReadOnly
+  */
+  displayItems: function() {
+    var items = this.get('items'), localize = this.get('localize'),
+        itemHeight = this.get('itemHeight'), len,
+        ret = [], idx, item, itemType;
+
+    if (!items) return null;
+
+    len = items.get('length');
+
+    // Loop through the items property and transmute as needed, then
+    // copy the new objects into the ret array.
+    for (idx = 0; idx < len; idx++) {
+      item = items.objectAt(idx) ;
+
+      // fast track out if we can't do anything with this item
+      if (!item) continue;
+
+      itemType = SC.typeOf(item);
+      if (itemType === SC.T_STRING) {
+        item = SC.Object.create({ title: item.humanize().titleize(),
+                                  value: item,
+                                  isEnabled: YES
+                               });
+      } else if (itemType === SC.T_HASH) {
+        item = SC.Object.create(item);
+      } else if (itemType === SC.T_ARRAY) {
+        item = this.convertArrayMenuItemToObject(item);
+      }
+      item.contentIndex = idx;
+
+      ret.push(item);
+    }
+
+    return ret;
+  }.property('items').cacheable(),
+
+  _sc_menu_itemsDidChange: function() {
+    var views = this.get('menuItemViews');
+    this._menuView.replaceAllChildren(views);
+    this._menuView.adjust('height', this.get('menuHeight'));
+  }.observes('items'),
+
+  /**
+    Takes an array of values and places them in a hash that can be used
+    to render a menu item.
+
+    The mapping goes a little something like this:
+    0: title
+    1: value
+    2: isEnabled
+    3: icon
+    4: isSeparator
+    5: action
+    6: isCheckbox
+    7: isShortCut
+    8: isBranch
+    9: itemHeight
+    10: subMenu
+    11: keyEquivalent
+    12: target
+
+    @private
+  */
+  convertArrayMenuItemToObject: function(item) {
+    SC.Logger.warn('Support for Array-based menu items has been deprecated.  Please update your menus to use a hash.');
+
+    var keys, fetchKeys = SC._menu_fetchKeys,
+        fetchItem = SC._menu_fetchItem, cur, ret = SC.Object.create(), idx, loc;
+
+    // Gets an array of all of the value keys
+    keys = this.menuItemKeys.map(fetchKeys, this);
+
+    // title
+    ret[keys[0]] = item[0];
+    ret[keys[1]] = item[1];
+    ret[keys[2]] = item[2];
+    ret[keys[3]] = item[3];
+    ret[keys[4]] = item[4];
+    ret[keys[5]] = item[5];
+    ret[keys[6]] = item[6];
+    ret[keys[7]] = item[7];
+    ret[keys[8]] = item[8];
+    ret[keys[9]] = item[9];
+    ret[keys[10]] = item[10];
+    ret[keys[11]] = item[11];
+    ret[keys[12]] = item[12];
+
+    return ret;
+  },
+
+  mouseEntered: function() {
+    this.becomeKeyPane();
+    this.set('mouseHasEntered', YES);
+  },
+
+  mouseExited: function() {
+    this.set('currentMenuItem', null);
+    this.set('mouseHasEntered', NO);
+  },
+
+  currentMenuItem: function(key, value) {
+    if (value !== undefined) {
+      if (this._currentMenuItem !== null) {
+        this.set('previousMenuItem', this._currentMenuItem);
+      }
+      this._currentMenuItem = value;
+      this.setPath('rootMenu.targetMenuItem', value);
+
+      return value;
+    }
+
+    return this._currentMenuItem;
+  }.property().cacheable(),
+
+  _sc_menu_currentMenuItemDidChange: function() {
+    var currentMenuItem = this.get('currentMenuItem'),
+        previousMenuItem = this.get('previousMenuItem');
+
+    if (previousMenuItem) {
+      if (previousMenuItem.get('hasSubMenu') && currentMenuItem === null) {
+
+      } else {
+        previousMenuItem.resignFirstResponder();
+        this.closeOpenMenusFor(previousMenuItem);
+      }
+    }
+
+    if (currentMenuItem && currentMenuItem.get('isEnabled') && !currentMenuItem.get('isSeparator')) {
+     currentMenuItem.becomeFirstResponder();
+    }
+  }.observes('currentMenuItem'),
+
+  closeOpenMenusFor: function(menuItem) {
+    if (!menuItem) return;
+
+    var menu = menuItem.get('parentMenu');
+
+    // Close any open menus if a root menu changes
+    while (menu && menuItem) {
+      menu = menuItem.get('subMenu');
+      if (menu) {
+        menu.remove();
+        menuItem.resignFirstResponder();
+        menuItem = menu.get('previousMenuItem');
+      }
+    }
+  },
+
+  closeOpenMenus: function() {
+    this.closeOpenMenusFor(this.get('previousMenuItem'));
+  },
+
   //Mouse and Key Events
-  
+
   /** @private */
   mouseDown: function(evt) {
     return YES ;
   },
-  
-  /** 
-    @private 
-    
-    Get the anchor and send the event to the anchor in case the 
-    current Menu is a subMenu
-  */
-  mouseUp: function(evt) {
-    this.remove() ;
-    var anchor = this.get('anchor') ;
-    if(this.isAnchorMenuItemType()) this.sendEvent('mouseUp', evt, anchor) ;
-    return YES ;
+
+  keyUp: function(evt) {
+    var ret = this.interpretKeyEvents(evt) ;
+    return !ret ? NO : ret ;
   },
-  
-  /** 
-    @private 
-    
-    This function gets called from the Menu Item in order to set the 
-    current Selected Menu Item and move the selection
-  */
-  moveDown: function(menuItem) {
-    var currentSelectedMenuItem = this.getNextEnabledMenuItem(menuItem) ;
-    if(menuItem) menuItem.resignFirstResponder() ;
-    currentSelectedMenuItem.becomeFirstResponder() ;
-  },
-  
-  /** 
-    @private 
-    
-    This function gets called from the Menu Item in order to set the 
-    current Selected Menu Item and move the selection
-  */
-  moveUp: function(menuItem) {
-    var currentSelectedMenuItem = this.getPreviousEnabledMenuItem(menuItem) ;
-    if(menuItem) menuItem.resignFirstResponder() ;
-    currentSelectedMenuItem.becomeFirstResponder() ;
-    return YES ;
-  },
-  
+
   /**
-    Get the previous Enabled Menu Item which is not a separator
-    
-    @returns MenuItemView
+    Selects the next enabled menu item above the currently
+    selected menu item when the up-arrow key is pressed.
+
+    @private
   */
-  getPreviousEnabledMenuItem : function(menuItem) {
-    var content, itemView, len, idx, menuIdx, isEnabled, isSeparator, 
-      menuItemViews = this.get('menuItemViews') ;
-    if(menuItemViews) {
-      len = menuItemViews.length ;
-      idx = (menuItemViews.indexOf(menuItem) === -1) ? 
-              len : menuItemViews.indexOf(menuItem) ;
-      menuIdx = idx;
-      isEnabled = NO;
-      isSeparator = NO ;
-      while((!isEnabled || isSeparator) && --idx !== menuIdx) {
-        if(idx === -1) idx = len - 1;
-        itemView = menuItemViews[idx];
-        isEnabled = itemView.get('isEnabled') ;
-        content = itemView.get('content') ;
-        if(content) {
-          isSeparator = content.get(itemView.get('isSeparatorKey'));
-        }
+  moveUp: function() {
+    var currentMenuItem = this.get('currentMenuItem'),
+        items = this.get('menuItemViews'),
+        currentIndex, parentMenu, idx;
+
+    if (!currentMenuItem) {
+      idx = items.get('length')-1;
+    } else {
+      currentIndex = currentMenuItem.getPath('content.contentIndex');
+      if (currentIndex === 0) return YES;
+      idx = currentIndex-1;
+    }
+
+    while (idx >= 0) {
+      if (items[idx].get('isEnabled')) {
+        this.set('currentMenuItem', items[idx]);
+        break;
       }
-      return menuItemViews[idx];
+      idx--;
+    }
+
+    return YES;
+  },
+
+  /**
+    Selects the next enabled menu item below the currently
+    selected menu item when the down-arrow key is pressed.
+
+    @private
+  */
+  moveDown: function() {
+    var currentMenuItem = this.get('currentMenuItem'),
+        items = this.get('menuItemViews'),
+        len = items.get('length'),
+        currentIndex, parentMenu, idx;
+
+    if (!currentMenuItem) {
+      idx = 0;
+    } else {
+      currentIndex = currentMenuItem.getPath('content.contentIndex');
+      if (currentIndex === len) return YES;
+      idx = currentIndex+1;
+    }
+
+    while (idx < len) {
+      if (items[idx].get('isEnabled')) {
+        this.set('currentMenuItem', items[idx]);
+        break;
+      }
+      idx++;
+    }
+
+    return YES;
+  },
+
+  insertText: function(chr, evt) {
+    var timer = this._timer, keyBuffer = this._keyBuffer;
+
+    if (timer) {
+      timer.invalidate();
+    }
+    timer = this._timer = SC.Timer.schedule({
+      target: this,
+      action: 'clearKeyBuffer',
+      interval: 500,
+      isPooled: NO
+    });
+
+    keyBuffer = keyBuffer || '';
+    keyBuffer += chr.toUpperCase();
+
+    this.selectMenuItemForString(keyBuffer);
+    this._keyBuffer = keyBuffer;
+
+    return YES;
+  },
+
+  performKeyEquivalent: function(keyEquivalent) {
+    var menuItem = this._keyEquivalents[keyEquivalent];
+
+    if (menuItem) {
+      menuItem.performAction(YES);
+      return YES;
+    }
+    return NO;
+  },
+
+  selectMenuItemForString: function(buffer) {
+    var items = this.get('menuItemViews'), item, title, idx, len, bufferLength;
+    if (!items) return;
+
+    bufferLength = buffer.length;
+    len = items.get('length');
+    for (idx = 0; idx < len; idx++) {
+      item = items.objectAt(idx);
+      title = item.get('title');
+
+      if (!title) continue;
+
+      title = title.replace(/ /g,'').substr(0,bufferLength).toUpperCase();
+      if (title === buffer) {
+        this.set('currentMenuItem', item);
+        break;
+      }
     }
   },
 
   /**
-    Get the next Enabled Menu Item which is not a separator
-    
-    @returns MenuItemView
+    Clear the key buffer if the user does not enter any text after a certain
+    amount of time.
+
+    This is called by the timer created in the insertText method.
+
+    @private
   */
-  getNextEnabledMenuItem : function(menuItem) {
-    var content, itemView, menuItemViews = this.get('menuItemViews') ;
-    if(menuItemViews) {
-      var len = menuItemViews.length ;
-      var idx = (menuItemViews.indexOf(menuItem) === -1) ? 
-        0 : menuItemViews.indexOf(menuItem) ;
-      var menuIdx = idx, isEnabled = NO , isSeparator = NO ;
-      while((!isEnabled || isSeparator) && ++idx !== menuIdx) {
-        if(idx === len) idx = 0;
-        itemView = menuItemViews[idx];
-        isEnabled = itemView.get('isEnabled') ;
-        content = itemView.get('content') ;
-        if(content) {
-          isSeparator = content.get(itemView.get('isSeparatorKey'));
-        }
-      }
-      return menuItemViews[idx] ;
-    }
+  clearKeyBuffer: function() {
+    this._keyBuffer = '';
   },
-  
-  /** 
-    @private - click away picker. 
-    
-    Override to pass the event to the parent Menu
-    in case the current Menu is a subMenu
-    
+
+  /**
+    Close the menu and any open submenus if the user clicks outside the menu.
+
+    Because only the root-most menu has a modal pane, this will only ever get
+    called once.
+
     @returns Boolean
+    @private
   */
   modalPaneDidClick: function(evt) {
-    var parentMenu, anchor, currentSelectedMenuItem, f = this.get("frame");
-    currentSelectedMenuItem = this.get('currentSelectedMenuItem');
-    if(currentSelectedMenuItem) {
-      anchor = currentSelectedMenuItem.getAnchor();
-      if(anchor) {
-        parentMenu = anchor.parentMenu();
-        if(parentMenu.kindOf(SC.MenuPane)) parentMenu.modalPaneDidClick(evt);
-      }
-    }
-    if(!this.clickInside(f, evt)) {
-      this.remove() ;
-    }
+    this.closeOpenMenusFor(this.get('previousMenuItem'));
+    this.remove();
+
     return YES;
-  },
-  
-  /** 
-    Get the Menu Item based on the key,value passed
-    @params {String} key 
-    @params {String} value 
-    
-    @returns SC.MenuItemView
-  */
-  getMenuItem: function(key,value) {
-    var displayItems, menuItemViews, idx;
-    displayItems = this.get('displayItemsArray') ;
-    menuItemViews = this.get('menuItemViews') ;
-    if(displayItems && menuItemViews) {
-      idx = displayItems.get(key).indexOf(value);
-      if(idx !== -1) return menuItemViews[idx];
-      else return null;
-    }
-    else return null;
   }
-  
-  
 });
 
 SC._menu_fetchKeys = function(k) {
@@ -39691,6 +40466,11 @@ SC.SelectButtonView = SC.ButtonView.extend(
   iconKey: null,
 
   /**
+    Key used to indicate if the item is to be enabled
+   */
+  isEnabledKey: "isEnabled",
+
+  /**
     If true, the empty name will be localized.
 
     @property
@@ -39723,14 +40503,6 @@ SC.SelectButtonView = SC.ButtonView.extend(
     @type:{Array}
   */
   itemList: [],
-
-  /**
-    Current selected menu item
-
-    @property
-    @default null
-  */
-  currentSelItem: null,
 
   /**
     Property to set the index of the selected menu item. This in turn
@@ -39868,12 +40640,12 @@ SC.SelectButtonView = SC.ButtonView.extend(
     customView used to draw the menu
   */
   customView: null,
-  
+
   /**
     css classes applied to customView
   */
   customViewClassName: null,
-  
+
   /**
     customView menu offset width
   */
@@ -39897,14 +40669,22 @@ SC.SelectButtonView = SC.ButtonView.extend(
   menuPaneHeightPadding: 0,
 
   /**
+    This is a property to enable/disable focus rings in buttons.
+    For select_button we are making it a default.
+
+    @default YES
+  */
+  supportFocusRing: YES,
+
+  /**
     Left Alignment based on the size of the button
 
     @private
   */
   leftAlign: function() {
     var val = 0, controlSize = this.get('controlSize') ;
-    if(controlSize === SC.SMALL_CONTROL_SIZE) val = -14 ;
-    if(controlSize === SC.REGULAR_CONTROL_SIZE) val = -16 ;
+    if(controlSize === SC.SMALL_CONTROL_SIZE) val = -12 ;
+    if(controlSize === SC.REGULAR_CONTROL_SIZE) val = -15 ;
     return val;
   }.property('controlSize'),
 
@@ -39938,7 +40718,7 @@ SC.SelectButtonView = SC.ButtonView.extend(
     arguments.callee.base.apply(this,arguments);
     var layoutWidth, objects, len, nameKey, iconKey, valueKey, checkboxEnabled,
       currentSelectedVal, shouldLocalize, separatorPostion, itemList, isChecked,
-      idx, name, icon, value, item;
+      idx, name, icon, value, item, itemEnabled, isEnabledKey ;
     layoutWidth = this.layout.width ;
     if(firstTime && layoutWidth) {
       this.adjust({ width: layoutWidth - this.SELECT_BUTTON_SPRITE_WIDTH }) ;
@@ -39952,6 +40732,7 @@ SC.SelectButtonView = SC.ButtonView.extend(
     nameKey = this.get('nameKey') ;
     iconKey = this.get('iconKey') ;
     valueKey = this.get('valueKey') ;
+    isEnabledKey = this.get('isEnabledKey') ;
     checkboxEnabled = this.get('checkboxEnabled') ;
 
     //get the current selected value
@@ -39984,7 +40765,7 @@ SC.SelectButtonView = SC.ButtonView.extend(
       name = shouldLocalize? name.loc() : name ;
 
       //Get the icon value
-      icon = iconKey ? (object.get ? 
+      icon = iconKey ? (object.get ?
         object.get(iconKey) : object[iconKey]) : null ;
       if (SC.none(object[iconKey])) icon = null ;
 
@@ -40010,6 +40791,10 @@ SC.SelectButtonView = SC.ButtonView.extend(
         isChecked = NO ;
       }
 
+      //Check if item is enabled
+      itemEnabled = object[isEnabledKey] ;
+      if(NO !== itemEnabled) itemEnabled = YES ;
+
       //Set the first item from the list as default selected item
       if (idx === 0) {
         this._defaultVal = value ;
@@ -40021,8 +40806,9 @@ SC.SelectButtonView = SC.ButtonView.extend(
         title: name,
         icon: icon,
         value: value,
-        isEnabled: YES,
+        isEnabled: itemEnabled,
         checkbox: isChecked,
+        target: this,
         action: this.displaySelectedItem
       }) ;
 
@@ -40056,6 +40842,7 @@ SC.SelectButtonView = SC.ButtonView.extend(
     }
 
     //Set the preference matrix for the menu pane
+    this.set('CUSTOM_MENU_ITEM_HEIGHT', this.get('controlSize')===SC.SMALL_CONTROL_SIZE ? 18 : 20);
     this.changeSelectButtonPreferMatrix(this.itemIdx) ;
 
   },
@@ -40070,9 +40857,9 @@ SC.SelectButtonView = SC.ButtonView.extend(
   {
     var buttonLabel, menuWidth, scrollWidth, lastMenuWidth, offsetWidth,
       items, elementOffsetWidth, largestMenuWidth, item, element, idx,
-      currSel, itemList, menuControlSize, menuHeightPadding, customView,
+      value, itemList, menuControlSize, menuHeightPadding, customView,
       customMenuView, menu, itemsLength;
-      
+
     buttonLabel = this.$('.sc-button-label')[0] ;
     // Get the length of the text on the button in pixels
     menuWidth = this.get('layer').offsetWidth ;
@@ -40124,7 +40911,7 @@ SC.SelectButtonView = SC.ButtonView.extend(
     }
 
     this.set('lastMenuWidth',lastMenuWidth) ;
-    currSel = this.get('currentSelItem') ;
+    value = this.get('value') ;
     itemList = this.get('itemList') ;
     menuControlSize = this.get('controlSize') ;
     menuHeightPadding = this.get('menuPaneHeightPadding') ;
@@ -40135,31 +40922,12 @@ SC.SelectButtonView = SC.ButtonView.extend(
 
     menu  = SC.MenuPane.create({
 
-      /**
-        Class name - select-button-item
-      */
       classNames: ['select-button'],
 
-      /**
-        The menu items are set from the itemList property of SelectButton
-
-        @property
-      */
       items: itemList,
 
-      /**
-        Example view which will be used to create the Menu Items
-
-        @default SC.MenuItemView
-        @type SC.View
-      */
       exampleView: customMenuView,
 
-      /**
-        This property enables all the items and makes them selectable.
-
-        @property
-      */
       isEnabled: YES,
 
       menuHeightPadding: menuHeightPadding,
@@ -40169,14 +40937,15 @@ SC.SelectButtonView = SC.ButtonView.extend(
       layout: { width: lastMenuWidth },
       controlSize: menuControlSize,
       itemWidth: lastMenuWidth,
+      itemHeight: this.get('itemHeight') || 20,
       contentView: SC.View.extend({
       })
     }) ;
 
     // no menu to toggle... bail...
     if (!menu) return NO ;
+    menu.set('defaultSelectedItemValue', value) ;
     menu.popup(this, this.preferMatrix) ;
-    menu.set('currentSelectedMenuItem', currSel) ;
     return YES ;
   },
 
@@ -40184,44 +40953,12 @@ SC.SelectButtonView = SC.ButtonView.extend(
      Action method for the select button menu items
 
   */
-  displaySelectedItem: function() {
-    var menuView, currSel, itemViews, title, val, itemIdx = 0, button, object,
-      len, found = null, objTmp;
-    
-    //Get MenuPane, currentSelectedMenuItem & menuItemView
-    // Get the main parent view to show the menus
-      
-    menuView = this.parentMenu() ;
-    currSel = menuView.get('currentSelectedMenuItem') ;
-    itemViews = menuView.menuItemViews ;
-    
-    //  Fetch the index of the current selected item
-    if (currSel && itemViews) {
-      itemIdx = itemViews.indexOf(currSel) ;
-    }
+  displaySelectedItem: function(menuView) {
+    var currentItem = menuView.get('selectedItem');
 
-    // Get the select button View
-    button = menuView.get('anchor') ;
-
-    // set the value and title
-    object = menuView.get('items') ;
-    len = object.length ;
-
-    while (!found && (--len >= 0)) {
-      objTmp = object[len];
-      title = !SC.none(objTmp.title) ? objTmp.title: object.toString() ;
-      val =  !SC.none(objTmp.value) ? objTmp.value: title ;
-
-      if (title === this.get('value') && (itemIdx === len)) {
-        found = object ;
-        button.set('value', val) ;
-        button.set('title', title) ;
-      }
-    }
-
-    // set the icon, currentSelectedItem and itemIdx
-    button.set('icon', this.get('icon')).set('currentSelItem', currSel).
-      set('itemIdx', itemIdx) ;
+    this.set('value', currentItem.get('value')) ;
+    this.set('title', currentItem.get('title')) ;
+    this.set('itemIdx', currentItem.get('contentIndex')) ;
   },
 
   /**
@@ -40230,7 +40967,9 @@ SC.SelectButtonView = SC.ButtonView.extend(
      place aligned to the item on the button when menu is opened.
   */
   changeSelectButtonPreferMatrix: function() {
-    var preferMatrixAttributeTop = 0 ,
+    var controlSizeTuning =
+      this.get('controlSize')===SC.SMALL_CONTROL_SIZE ? 0 : -2;
+    var preferMatrixAttributeTop = controlSizeTuning ,
       itemIdx = this.get('itemIdx') ,
       leftAlign = this.get('leftAlign'), defPreferMatrix, tempPreferMatrix ;
 
@@ -40240,7 +40979,8 @@ SC.SelectButtonView = SC.ButtonView.extend(
     }
     else {
       if(itemIdx) {
-        preferMatrixAttributeTop = itemIdx * this.CUSTOM_MENU_ITEM_HEIGHT ;
+        preferMatrixAttributeTop = itemIdx * this.CUSTOM_MENU_ITEM_HEIGHT +
+          controlSizeTuning ;
       }
       tempPreferMatrix = [leftAlign, -preferMatrixAttributeTop, 2] ;
       this.set('preferMatrix', tempPreferMatrix) ;
@@ -40290,7 +41030,12 @@ SC.SelectButtonView = SC.ButtonView.extend(
       }
     }
     return arguments.callee.base.apply(this,arguments);
-  }
+  },
+
+  /** Function overridden - tied to the isEnabled state */
+  acceptsFirstResponder: function() {
+    return this.get('isEnabled');
+  }.property('isEnabled')
 
 }) ;
 
@@ -40418,20 +41163,26 @@ SC.SheetPane = SC.PanelPane.extend({
     this._timer = null ; // clear out
 
     var now = Date.now();
-    var target = this;
-    var pct = (now-this._start)/(this._end-this._start);
-    var dir = this._direction, layout = this.get('layout'), newLayout, adjust;
+    var pct = (now-this._start)/(this._end-this._start),
+        target = this, dir = this._direction, layout = this.get('layout'), 
+        newLayout, adjust;
     if (pct<0) pct = 0;
-
+    
     // If we are done...
     if (pct>=1) {
+      
       if (dir === this.SLIDE_DOWN){
         target.adjust('top', 0);
+        
+        //Hack to make sure textfields are at the right place at the end of
+        // the animation.
+        if(SC.browser.mozilla) this.parentViewDidChange();
       } else {
         target.adjust('top', -1*layout.height);
       }
       this._state = SC.SheetPane.READY;
       this.updateLayout();
+      
       return this;
     }
 
@@ -41523,7 +42274,7 @@ SC.RootResponder = SC.RootResponder.extend(
   
   setup: function() {
     // handle basic events        
-    this.listenFor('keydown keyup mousedown mouseup click dblclick mouseout mouseover mousemove selectstart'.w(), document)
+    this.listenFor('keydown keyup mousedown mouseup click dblclick mouseout mouseover mousemove selectstart contextmenu'.w(), document)
         .listenFor('resize focus blur'.w(), window);
 
     // handle special case for keypress- you can't use normal listener to block the backspace key on Mozilla
@@ -41570,6 +42321,8 @@ SC.RootResponder = SC.RootResponder.extend(
     // do some initial set
     this.set('currentWindowSize', this.computeWindowSize()) ;
     this.focus(); // assume the window is focused when you load.
+    
+    arguments.callee.base.apply(this,arguments);
   },
 
   /**
@@ -41765,6 +42518,14 @@ SC.RootResponder = SC.RootResponder.extend(
   keydown: function(evt) {
     if (SC.none(evt)) return YES;
     
+    // Fix for IME input (japanese, mandarin). 
+    // If the KeyCode is 229 wait for the keyup and
+    // trigger a keyDown if it is is enter onKeyup.
+    if (evt.keyCode===229){
+      this._IMEInputON = YES;
+      return YES;
+    }
+    
     // Firefox does NOT handle delete here...
     if (SC.browser.mozilla && (evt.which === 8)) return true ;
     
@@ -41788,6 +42549,7 @@ SC.RootResponder = SC.RootResponder.extend(
       
       // Arrow keys are handled in keypress for firefox
       if (evt.keyCode>=37 && evt.keyCode<=40 && SC.browser.mozilla) return YES;
+     
       
       ret = this.sendEvent('keyDown', evt) ;
       
@@ -41838,6 +42600,14 @@ SC.RootResponder = SC.RootResponder.extend(
     // send event for modifier key changes, but only stop processing if this is only a modifier change
     var ret = this._handleModifierChanges(evt);
     if (this._isModifierKey(evt)) return ret;
+    // Fix for IME input (japanese, mandarin). 
+    // If the KeyCode is 229 wait for the keyup and
+    // trigger a keyDown if it is is enter onKeyup.
+    if (this._IMEInputON && evt.keyCode===13){
+      evt.isIMEInput = YES;
+      this.sendEvent('keyDown', evt);
+      this._IMEInputON = NO;
+    } 
     return this.sendEvent('keyUp', evt) ? evt.hasCustomEventHandling:YES;
   },
   
@@ -41849,25 +42619,31 @@ SC.RootResponder = SC.RootResponder.extend(
       // the default action and we have something in the app like an iframe.
       window.focus();
       this.focus();
-      if(SC.browser.msie) {
-        this._lastMouseDownX = evt.clientX;
-        this._lastMouseDownY = evt.clientY;
-      }
-      // first, save the click count.  Click count resets if your down is
-      // more than 125msec after you last click up.
+
+      // First, save the click count. The click count resets if the mouse down
+      // event occurs more than 200 ms later than the mouse up event or more
+      // than 8 pixels away from the mouse down event.
       this._clickCount += 1 ;
       if (!this._lastMouseUpAt || ((Date.now()-this._lastMouseUpAt) > 200)) {
-        this._clickCount = 1 ; 
+        this._clickCount = 1 ;
+      } else {
+        var deltaX = this._lastMouseDownX - evt.clientX ;
+        var deltaY = this._lastMouseDownY - evt.clientY ;
+        var distance = Math.sqrt(deltaX*deltaX + deltaY*deltaY) ;
+        if (distance > 8.0) this._clickCount = 1 ;
       }
       evt.clickCount = this._clickCount ;
-      
+
+      this._lastMouseDownX = evt.clientX ;
+      this._lastMouseDownY = evt.clientY ;
+
       var fr, view = this.targetViewForEvent(evt) ;
       // InlineTextField needs to loose firstResponder whenever you click outside
       // the view. This is a special case as textfields are not supposed to loose 
       // focus unless you click on a list, another textfield or an special
       // view/control.
       
-      if(view) fr=view.get('pane').get('firstResponder');
+      if(view) fr=view.getPath('pane.firstResponder');
       
       if(fr && fr.kindOf(SC.InlineTextFieldView) && fr!==view){
         fr.resignFirstResponder();
@@ -42058,11 +42834,25 @@ SC.RootResponder = SC.RootResponder.extend(
   _mouseCanDrag: YES,
   
   selectstart: function(evt) { 
-    var result = this.sendEvent('selectStart', evt, this.targetViewForEvent(evt));
-    return (result !==null ? YES: NO) && (this._mouseCanDrag ? NO : YES);
+    var targetView = this.targetViewForEvent(evt);
+    var result = this.sendEvent('selectStart', evt, targetView);
+    
+    // If the target view implements mouseDragged, then we want to ignore the
+    // 'selectstart' event.
+    if (targetView && targetView.respondsTo('mouseDragged')) {
+      return (result !==null ? YES: NO) && !this._mouseCanDrag;
+    }
+    else {
+      return (result !==null ? YES: NO);
+    }
   },
   
-  drag: function() { return false; }
+  drag: function() { return false; },
+  
+  contextmenu: function(evt) {
+    var view = this.targetViewForEvent(evt) ; 
+    return this.sendEvent('contextMenu', evt, view);
+  }
   
 });
 
@@ -42290,19 +43080,21 @@ SC.CheckboxView = SC.FieldView.extend(SC.StaticLayout, SC.Button,
     
     // add checkbox -- set name to view guid to separate it from others
     if (firstTime) {
+      var blank = SC.BLANK_IMAGE_URL,
+          disabled = this.get('isEnabled') ? '' : 'disabled="disabled"',
+          guid = SC.guidFor(this);
+      
       dt = this._field_currentDisplayTitle = this.get('displayTitle');
 
-      var blank = SC.BLANK_IMAGE_URL;
-      var disabled = this.get('isEnabled') ? '' : 'disabled="disabled"';
-      if(SC.browser.msie) context.attr('for', SC.guidFor(this));
+      if(SC.browser.msie) context.attr('for', guid);
       context.push('<span class="button" ></span>');
-      context.push('<input type="checkbox" id="%@" name="%@" %@ />'.fmt(SC.guidFor(this),SC.guidFor(this),disabled));
+      context.push('<input type="checkbox" id="'+guid+'" name="'+guid+'" '+disabled+' />');
       if(this.get('needsEllipsis')){
         context.push('<span class="label ellipsis">', dt, '</span>');
       }else{
         context.push('<span class="label">', dt, '</span>');  
       }
-      context.attr('name', SC.guidFor(this));
+      context.attr('name', guid);
 
     // since we don't want to regenerate the contents each time 
     // actually search for and update the displayTitle.
@@ -42371,10 +43163,12 @@ SC.CheckboxView = SC.FieldView.extend(SC.StaticLayout, SC.Button,
   didCreateLayer: function() {
     this.setFieldValue(this.get('fieldValue'));
     SC.Event.add(this.$input()[0], 'click', this, this._field_fieldValueDidChange) ;
+    SC.Event.add(this.$('.label')[0], 'click', this, this._field_fieldValueDidChange) ;
   },
   
   willDestroyLayer: function() {
     SC.Event.remove(this.$input()[0], 'click', this, this._field_fieldValueDidChange); 
+    SC.Event.remove(this.$('.label')[0], 'click', this, this._field_fieldValueDidChange) ;
   },
   
   mouseDown: function(evt) {
@@ -42571,10 +43365,10 @@ SC.ListItemView = SC.View.extend(
         del     = this.displayDelegate,
         level   = this.get('outlineLevel'),
         indent  = this.get('outlineIndent'),
-        key, value, working ;
+        key, value, working, classArray = [];
     
     // add alternating row classes
-    context.addClass((this.get('contentIndex')%2 === 0) ? 'even' : 'odd');
+    classArray.push((this.get('contentIndex')%2 === 0) ? 'even' : 'odd');
     context.setClass('disabled', !this.get('isEnabled'));
 
     // outline level wrapper
@@ -42585,7 +43379,7 @@ SC.ListItemView = SC.View.extend(
     value = this.get('disclosureState');
     if (value !== SC.LEAF_NODE) {
       this.renderDisclosure(working, value);
-      context.addClass('has-disclosure');
+      classArray.push('has-disclosure');
     }
     
     
@@ -42594,7 +43388,7 @@ SC.ListItemView = SC.View.extend(
     if (key) {
       value = content ? (content.get ? content.get(key) : content[key]) : NO ;
       this.renderCheckbox(working, value);
-      context.addClass('has-checkbox');
+      classArray.push('has-checkbox');
     }
     
     // handle icon
@@ -42603,7 +43397,7 @@ SC.ListItemView = SC.View.extend(
       value = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
       
       this.renderIcon(working, value);
-      context.addClass('has-icon');
+      classArray.push('has-icon');      
     }
     
     // handle label -- always invoke
@@ -42619,7 +43413,7 @@ SC.ListItemView = SC.View.extend(
       value = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
       
       this.renderRightIcon(working, value);
-      context.addClass('has-right-icon');
+      classArray.push('has-right-icon');
     }
     
     // handle unread count
@@ -42628,8 +43422,10 @@ SC.ListItemView = SC.View.extend(
     if (!SC.none(value) && (value !== 0)) {
       this.renderCount(working, value) ;
       var digits = ['zero', 'one', 'two', 'three', 'four', 'five'];
-      var digit = (value.toString().length < digits.length) ? digits[value.toString().length] : digits[digits.length-1];
-      context.addClass('has-count '+digit+'-digit');
+      var valueLength = value.toString().length;
+      var digitsLength = digits.length;
+      var digit = (valueLength < digitsLength) ? digits[valueLength] : digits[digitsLength-1];
+      classArray.push('has-count '+digit+'-digit');
     }
     
     // handle action 
@@ -42637,7 +43433,7 @@ SC.ListItemView = SC.View.extend(
     value = (key && content) ? (content.get ? content.get(key) : content[key]) : null ;
     if (value) {
       this.renderAction(working, value);
-      context.addClass('has-action');
+      classArray.push('has-action');
     }
     
     // handle branch
@@ -42645,9 +43441,9 @@ SC.ListItemView = SC.View.extend(
       key = this.getDelegateProperty('contentIsBranchKey', del);
       value = (key && content) ? (content.get ? content.get(key) : content[key]) : NO ;
       this.renderBranch(working, value);
-      context.addClass('has-branch');
+      classArray.push('has-branch');
     }
-    
+    context.addClass(classArray);
     context = working.end();
   },
   
@@ -42689,7 +43485,7 @@ SC.ListItemView = SC.View.extend(
     var key = (state === SC.MIXED_STATE) ? "mixed" : state ? "sel" : "nosel",
         cache = this._scli_checkboxHtml,
         isEnabled = this.get('contentIsEditable') && this.get('isEnabled'),
-        html, tmp;
+        html, tmp, classArray=[];
         
     if (!isEnabled) key = SC.keyFor('disabled', key);
     if (!cache) cache = this.constructor.prototype._scli_checkboxHtml = {};
@@ -42697,14 +43493,16 @@ SC.ListItemView = SC.View.extend(
     
     if (!html) {
       tmp = SC.RenderContext('a').attr('href', 'javascript:;')
-        .classNames(SC.CheckboxView.prototype.classNames);
+        .classNames(SC.clone(SC.CheckboxView.prototype.classNames));
 
       // set state on html
-      if (state === SC.MIXED_STATE) tmp.addClass('mixed');
-      else tmp.setClass('sel', state);
+      if (state === SC.MIXED_STATE) classArray.push('mixed');
+      else if(state) classArray.push('sel');
       
       // disabled
-      tmp.setClass('disabled', !isEnabled);
+      if(!isEnabled) classArray.push('disabled');
+      
+      tmp.addClass(classArray);
 
       // now add inner content.  note we do not add a real checkbox because
       // we don't want to have to setup a change observer on it.
@@ -42728,7 +43526,7 @@ SC.ListItemView = SC.View.extend(
   */
   renderIcon: function(context, icon){
     // get a class name and url to include if relevant
-    var url = null, className = null ;
+    var url = null, className = null , classArray=[];
     if (icon && SC.ImageView.valueIsUrl(icon)) {
       url = icon; className = '' ;
     } else {
@@ -42736,10 +43534,12 @@ SC.ListItemView = SC.View.extend(
     }
     
     // generate the img element...
+    classArray.push(className);
+    classArray.push('icon');
     context.begin('img')
-      .addClass('icon').addClass(className)
-      .attr('src', url)
-    .end();
+            .addClass(classArray)
+            .attr('src', url)
+            .end();
   },
   
   /** 
@@ -42777,7 +43577,7 @@ SC.ListItemView = SC.View.extend(
   */
   renderRightIcon: function(context, icon){
     // get a class name and url to include if relevant
-    var url = null, className = null ;
+    var url = null, className = null, classArray=[];
     if (icon && SC.ImageView.valueIsUrl(icon)) {
       url = icon; className = '' ;
     } else {
@@ -42785,8 +43585,10 @@ SC.ListItemView = SC.View.extend(
     }
     
     // generate the img element...
+    classArray.push('right-icon');
+    classArray.push(className);
     context.begin('img')
-      .addClass('right-icon').addClass(className)
+      .addClass(classArray)
       .attr('src', url)
     .end();
   },
@@ -42826,9 +43628,13 @@ SC.ListItemView = SC.View.extend(
    @returns {void}
   */
   renderBranch: function(context, hasBranch) {
-    context.begin('span').addClass('branch')
-      .addClass(hasBranch ? 'branch-visible' : 'branch-hidden')
-      .push('&nbsp;').end();
+    var classArray=[];
+    classArray.push('branch');
+    classArray.push(hasBranch ? 'branch-visible' : 'branch-hidden');
+    context.begin('span')
+          .addClass(classArray)
+          .push('&nbsp;')
+          .end();
   },
   
   /** 
@@ -43077,7 +43883,7 @@ SC.ListItemView = SC.View.extend(
     // view too often.
     if (scrollIfNeeded && this.scrollToVisible()) {
       var collectionView = this.get('owner'), idx = this.get('contentIndex');
-      this.invokeLater(function() {
+      this.invokeLast(function() {
         var item = collectionView.itemViewForContentIndex(idx);
         if (item && item._beginEditing) item._beginEditing(NO);
       });
@@ -45326,7 +46132,7 @@ SC.CollectionView = SC.View.extend(
     @type String
   */
   reorderDataType: function() {
-    return 'SC.CollectionView.Reorder.%@'.fmt(SC.guidFor(this)) ;
+    return 'SC.CollectionView.Reorder.'+SC.guidFor(this) ;
   }.property().cacheable(),
   
   /**
@@ -45998,7 +46804,11 @@ SC.CollectionView = SC.View.extend(
 /**
   @class
   
-  Disclosure triangle button.
+  Disclosure triangle button. As a subclass of SC.ButtonView, this view
+  takes a lot of the same properties as a button:
+  
+  - isEnabled: whether disclosure triangle is clickable or not
+  - value: YES or NO (where YES implies expanded/open)
   
   @extends SC.ButtonView
   @since SproutCore
@@ -46027,18 +46837,27 @@ SC.DisclosureView = SC.ButtonView.extend(
   
   /** @private */
   render: function(context, firstTime) {
-    if(firstTime){
+    var title = this.get('displayTitle');
+    if(firstTime) {
       context.push('<img src="', SC.BLANK_IMAGE_URL, '" class="button" alt="" />');
-      if(this.get('needsEllipsis')){
-        context.push('<label class="ellipsis">',this.get('displayTitle'),'</label>');
-      }else{
-        context.push('<label>',this.get('displayTitle'),'</label>');  
+      if(this.get('needsEllipsis')) {
+        context.push('<label class="ellipsis">',title,'</label>');
       }
-    }else{
-      this.$('label')[0].text = this.get('displayTitle');
+      else {
+        context.push('<label>', title,'</label>');  
+      }
+    }
+    else {
+      this.$('label').text(title);
     }
   },
   
+  /**
+    Allows toggling of the value with the right and left arrow keys. 
+    Extends the behavior inherted from SC.ButtonView.
+    
+    @param evt
+  */
   keyDown: function(evt) {
     if (evt.which === 37 || evt.which === 38) {  
       this.set('value', this.get('toggleOffValue')) ;
@@ -46047,8 +46866,8 @@ SC.DisclosureView = SC.ButtonView.extend(
     if (evt.which === 39 || evt.which === 40) {  
       this.set('value', this.get('toggleOnValue')) ;
       return YES;
-    }     
-    arguments.callee.base.apply(this,arguments); 
+    }
+    arguments.callee.base.apply(this,arguments);
   }
   
 });
@@ -46259,12 +47078,13 @@ SC.ListView = SC.CollectionView.extend(
 
     var del       = this.get('rowDelegate'),
         rowHeight = del.get('rowHeight'),
-        ret, custom, cache, delta, max, content ;
+        rowSpacing, ret, custom, cache, delta, max, content ;
         
     ret = idx * rowHeight;
 
-		if(this.get('rowSpacing')){ 
-      ret += idx * this.get('rowSpacing'); 
+    rowSpacing = this.get('rowSpacing');
+		if(rowSpacing){ 
+      ret += idx * rowSpacing; 
     } 
 
     if (del.customRowHeightIndexes && (custom=del.get('customRowHeightIndexes'))) {
@@ -46661,6 +47481,18 @@ SC.ListView = SC.CollectionView.extend(
     return [index, dropOperation];
   },
   
+  mouseWheel: function(evt) {
+    // The following commits changes in a list item that is being edited,
+    // if the list is scrolled.
+    var inlineEditor = SC.InlineTextFieldView.editor;
+    if(inlineEditor && inlineEditor.get('isEditing')){
+      if(inlineEditor.get('delegate').get('displayDelegate')===this){
+        SC.InlineTextFieldView.commitEditing();
+      }
+    }
+    return NO ;  
+  },
+  
   // ..........................................................
   // INTERNAL SUPPORT
   // 
@@ -46718,8 +47550,8 @@ SC.GridView = SC.ListView.extend(
   
   /** @private */
   itemsPerRow: function() {
-    var f = this.get('frame') ;
-    var columnWidth = this.get('columnWidth') || 0 ;
+    var f = this.get('frame'),
+        columnWidth = this.get('columnWidth') || 0 ;
 
     return (columnWidth <= 0) ? 1 : Math.floor(f.width / columnWidth) ;
   }.property('clippingFrame', 'columnWidth').cacheable(),
@@ -46730,23 +47562,21 @@ SC.GridView = SC.ListView.extend(
     contiguous range.
   */
   contentIndexesInRect: function(rect) {
-    var rowHeight = this.get('rowHeight') || 48 ;
-    var itemsPerRow = this.get('itemsPerRow') ;
-    
-    var min = Math.floor(SC.minY(rect) / rowHeight) * itemsPerRow  ;
-    var max = Math.ceil(SC.maxY(rect) / rowHeight) * itemsPerRow ;
+    var rowHeight = this.get('rowHeight') || 48 ,
+        itemsPerRow = this.get('itemsPerRow'),
+        min = Math.floor(SC.minY(rect) / rowHeight) * itemsPerRow,
+        max = Math.ceil(SC.maxY(rect) / rowHeight) * itemsPerRow ;
     return SC.IndexSet.create(min, max-min);
   },
   
   /** @private */
   layoutForContentIndex: function(contentIndex) {
-    var rowHeight = this.get('rowHeight') || 48 ;
-    var frameWidth = this.get('clippingFrame').width ;
-    var itemsPerRow = this.get('itemsPerRow') ;
-    var columnWidth = Math.floor(frameWidth/itemsPerRow);
-    
-    var row = Math.floor(contentIndex / itemsPerRow) ;
-    var col = contentIndex - (itemsPerRow*row) ;
+    var rowHeight = this.get('rowHeight') || 48,
+        frameWidth = this.get('clippingFrame').width,
+        itemsPerRow = this.get('itemsPerRow'),
+        columnWidth = Math.floor(frameWidth/itemsPerRow),
+        row = Math.floor(contentIndex / itemsPerRow),
+        col = contentIndex - (itemsPerRow*row) ;
     return { 
       left: col * columnWidth,
       top: row * rowHeight,
@@ -46760,11 +47590,11 @@ SC.GridView = SC.ListView.extend(
     of the list view.
   */
   computeLayout: function() {
-    var content = this.get('content') ;
-    var count = (content) ? content.get('length') : 0 ;
-    var rowHeight = this.get('rowHeight') || 48 ;
-    var itemsPerRow = this.get('itemsPerRow') ;
-    var rows = Math.ceil(count / itemsPerRow) ;
+    var content = this.get('content'),
+        count = (content) ? content.get('length') : 0,
+        rowHeight = this.get('rowHeight') || 48,
+        itemsPerRow = this.get('itemsPerRow'),
+        rows = Math.ceil(count / itemsPerRow) ;
   
     // use this cached layout hash to avoid allocing memory...
     var ret = this._cachedLayoutHash ;
@@ -46838,18 +47668,16 @@ SC.GridView = SC.ListView.extend(
   
   // // We can do this much faster programatically using the rowHeight
   insertionIndexForLocation: function(loc, dropOperation) {  
-    var f = this.get('frame') ;
-    var sf = this.get('scrollFrame') ;
-    
-    var itemsPerRow = this.get('itemsPerRow') ; 
-    var columnWidth = Math.floor(f.width / itemsPerRow) ;
-    var row = Math.floor((loc.y - f.y - sf.y) / this.get('rowHeight')) ;
+    var f = this.get('frame'),
+        sf = this.get('scrollFrame'),
+        itemsPerRow = this.get('itemsPerRow'),
+        columnWidth = Math.floor(f.width / itemsPerRow),
+        row = Math.floor((loc.y - f.y - sf.y) / this.get('rowHeight')) ;
 
-    var retOp = SC.DROP_BEFORE ;
-    
-    var offset = (loc.x - f.x - sf.x) ;
-    var col = Math.floor(offset / columnWidth) ;
-    var percentage = (offset / columnWidth) - col ;
+    var retOp = SC.DROP_BEFORE,
+        offset = (loc.x - f.x - sf.x),
+        col = Math.floor(offset / columnWidth),
+        percentage = (offset / columnWidth) - col ;
     
     // if the dropOperation is SC.DROP_ON and we are in the center 60%
     // then return the current item.
@@ -46892,6 +47720,9 @@ SC.GridView = SC.ListView.extend(
 //            Portions ©2008-2009 Apple Inc. All rights reserved.
 // License:   Licened under MIT license (see license.js)
 // ==========================================================================
+
+/** Vary based on current platform. */
+SC.NATURAL_SCROLLER_THICKNESS = 16;
 
 /** @class
 
@@ -47016,7 +47847,7 @@ SC.ScrollerView = SC.View.extend({
       case SC.LAYOUT_VERTICAL:
         context.addClass('sc-vertical') ;
         if (firstTime) {
-          context.push('<div class="sc-inner" style="height: %@px;">&nbsp;</div>'.fmt(max)) ;
+          context.push('<div class="sc-inner" style="height: '+max+'px;">&nbsp;</div>') ;
         } else {
           this.$('div')[0].style.height = max + "px";
         }
@@ -47024,7 +47855,7 @@ SC.ScrollerView = SC.View.extend({
       case SC.LAYOUT_HORIZONTAL:
         context.addClass('sc-horizontal') ;
         if (firstTime) {  
-          context.push('<div class="sc-inner" style="width: %@px;">&nbsp;</div>'.fmt(max)) ;
+          context.push('<div class="sc-inner" style="width: '+max+'px;">&nbsp;</div>') ;
         } else {
           this.$('div')[0].style.width = max + "px";
         }
@@ -47679,7 +48510,8 @@ SC.ScrollView = SC.View.extend(SC.Border, {
     this.contentView = this.containerView.get('contentView');
     
     // create a horizontal scroller view if needed...
-    if (view=this.horizontalScrollerView) {
+    view = this.horizontalScrollerView;
+    if (view) {
       if (this.get('hasHorizontalScroller')) {
         view = this.horizontalScrollerView = this.createChildView(view, {
           layoutDirection: SC.LAYOUT_HORIZONTAL,
@@ -47690,7 +48522,8 @@ SC.ScrollView = SC.View.extend(SC.Border, {
     }
     
     // create a vertical scroller view if needed...
-    if (view=this.verticalScrollerView) {
+    view = this.verticalScrollerView;
+    if (view) {
       if (this.get('hasVerticalScroller')) {
         view = this.verticalScrollerView = this.createChildView(view, {
           layoutDirection: SC.LAYOUT_VERTICAL,
@@ -47856,6 +48689,31 @@ SC.ScrollView = SC.View.extend(SC.Border, {
     
   }.observes('verticalScrollOffset'),
   
+  /** @private
+    Whenever the scroll frame changes check if the verticalScrollOffset and 
+    horizontalScrollOffset are still smaller then the maximum value.
+  */
+  _scroll_frameDidChange: function() {
+    SC.RunLoop.currentRunLoop.invokeLast(this, function() {
+      var verticalScrolllOffset = this.get('verticalScrollOffset');
+      var maxVerticalScrollOffset = this.get('maximumVerticalScrollOffset');
+      
+      var horizontalScrollOffset = this.get('horizontalScrollOffset');
+      var maxHorizontalScrollOffset = this.get('maximumHorizontalScrollOffset');
+      
+      var clampVertical =  verticalScrolllOffset > maxVerticalScrollOffset;
+      var clampHorizontal = horizontalScrollOffset > maxHorizontalScrollOffset;
+      
+      if (clampVertical && clampHorizontal) {
+        this.scrollTo(maxHorizontalScrollOffset, maxVerticalScrollOffset);
+      } else if (clampVertical) {
+        this.scrollTo(horizontalScrollOffset, maxVerticalScrollOffset);
+      } else if (clampHorizontal) {
+        this.scrollTo(maxHorizontalScrollOffset, verticalScrolllOffset);
+      }
+    });
+  }.observes('frame'),
+   
   forceDimensionsRecalculation: function (forceWidth, forceHeight, vOffSet, hOffSet) {
     var oldScrollHOffset = hOffSet;
     var oldScrollVOffset = vOffSet;
@@ -47958,7 +48816,7 @@ SC.MenuScrollerView = SC.ScrollerView.extend({
      Defaults to 20px.
   */
   verticalLineScroll: 20,
-  
+
   /**
     This function overrides the default function in SC.Scroller as 
     menus only have vertical scrolling.
@@ -47986,16 +48844,16 @@ SC.MenuScrollerView = SC.ScrollerView.extend({
   },
   
   didCreateLayer: function() {
-    var callback, amt, layer;
-    
-    callback = this._sc_scroller_scrollDidChange ;
-    SC.Event.add(this.$(), 'scroll', this, callback) ;
-    
-    // set scrollOffset first time
-    amt = this.get('value') ;
-    layer = this.get('layer') ;
-    
-    layer.scrollTop = amt ;
+    // var callback, amt, layer;
+    // 
+    // callback = this._sc_scroller_scrollDidChange ;
+    // SC.Event.add(this.$(), 'scroll', this, callback) ;
+    // 
+    // // set scrollOffset first time
+    // amt = this.get('value') ;
+    // layer = this.get('layer') ;
+    // 
+    // layer.scrollTop = amt ;
   },
   
   willDestroyLayer: function() {
@@ -48086,7 +48944,7 @@ SC.MenuScrollerView = SC.ScrollerView.extend({
   _invokeScrollOnMouseOver: function(){
     this._scrollMenu();
     if(this.get('isMouseOver')){
-      this.invokeLater(this._invokeScrollOnMouseOver, 50);
+      this.invokeLater(this._invokeScrollOnMouseOver, 100);
     }
   }
   
@@ -48222,6 +49080,11 @@ SC.MenuScrollView = SC.ScrollView.extend({
   // ..........................................................
   // CUSTOM VIEWS
   // 
+
+  /**
+    Control Size for Menu content: change verticalLineScroll
+  */
+  controlSize: SC.REGULAR_CONTROL_SIZE,
   
   /**
     The container view that will contain your main content view.  You can 
@@ -48258,31 +49121,32 @@ SC.MenuScrollView = SC.ScrollView.extend({
     
     if (hasVertical) {
       viewportHeight =0;
+      var scrollerThickness = vscroll.get('scrollerThickness') || vscroll2.get('scrollerThickness');
       var view   = this.get('contentView'), view2, 
             f      = (view) ? view.get('frame') : null, 
             height = (f) ? f.height : 0,
             elem = this.containerView.$()[0],
             verticalOffset = this.get('verticalScrollOffset'),
             topArrowInvisible = { height: 0, top: 0, right: 0, left: 0 },
-            topArrowVisible = { height: this.verticalLineScroll, top: 0, right: 0, left: 0 },
-            bottomArrowVisible = { height: this.verticalLineScroll, bottom: 0, right: 0, left: 0 },
+            topArrowVisible = { height: scrollerThickness, top: 0, right: 0, left: 0 },
+            bottomArrowVisible = { height: scrollerThickness, bottom: 0, right: 0, left: 0 },
             bottomArrowInvisible = { height: 0, bottom: 0, right: 0, left: 0 };
       
       if(elem) viewportHeight = elem.offsetHeight;
       
       if(verticalOffset===0){
         clipLayout.top = 0 ;
-        clipLayout.bottom = this.verticalLineScroll;
+        clipLayout.bottom = scrollerThickness;
         vscroll.set('layout', topArrowInvisible) ;
         vscroll2.set('layout', bottomArrowVisible) ;
-      }else if(verticalOffset>=(height-viewportHeight-this.verticalLineScroll)){
-        clipLayout.top = this.verticalLineScroll ;
+      }else if(verticalOffset>=(height-viewportHeight-scrollerThickness)){
+        clipLayout.top = scrollerThickness ;
         clipLayout.bottom = 0 ;
         vscroll.set('layout', topArrowVisible) ;
         vscroll2.set('layout', bottomArrowInvisible) ;
       }else{
-        clipLayout.top = this.verticalLineScroll ;
-        clipLayout.bottom = this.verticalLineScroll ;
+        clipLayout.top = scrollerThickness ;
+        clipLayout.bottom = scrollerThickness ;
         vscroll.set('layout', topArrowVisible) ;
         vscroll2.set('layout', bottomArrowVisible) ;
       }
@@ -48327,14 +49191,17 @@ SC.MenuScrollView = SC.ScrollView.extend({
     // create a vertical scroller 
     if ((view=this.verticalScrollerView) && (view2=this.verticalScrollerView2)) {
       if (this.get('hasVerticalScroller')) {
+        var scrollerThickness = (this.get('controlSize') === SC.SMALL_CONTROL_SIZE) ? 14 : 16;
         view = this.verticalScrollerView = this.createChildView(view, {
-          layout: {top: 0, left: 0, right: 0, height: this.verticalLineScroll},
+          layout: {top: 0, left: 0, right: 0, height: scrollerThickness},
+          scrollerThickness: scrollerThickness,
           valueBinding: '*owner.verticalScrollOffset'
         }) ;
         childViews.push(view);
         view2 = this.verticalScrollerView2 = this.createChildView(view2, {
           scrollDown: YES,
-          layout: {bottom: 0, left: 0, right: 0, height: this.verticalLineScroll},
+          layout: {bottom: 0, left: 0, right: 0, height: scrollerThickness},
+          scrollerThickness: scrollerThickness,
           valueBinding: '*owner.verticalScrollOffset'
         }) ;
         childViews.push(view2);
@@ -48372,31 +49239,6 @@ SC.MenuScrollView = SC.ScrollView.extend({
     if (this.get('isVisibleInWindow')) SC.Drag.addScrollableView(this);
     else SC.Drag.removeScrollableView(this);
   }.observes('isVisibleInWindow'),
-  
-  /** @private
-    Whenever the contentView is changed, we need to observe the content view's
-    frame to be notified whenever it's size changes.
-  */
-  contentViewDidChange: function() {
-    var newView = this.get('contentView'), 
-        oldView = this._scroll_contentView,
-        f = this.contentViewFrameDidChange ;
-      
-    if (newView !== oldView) {
-      
-      // stop observing old content view
-      if (oldView) oldView.removeObserver('frame', this, f);
-      
-      // update cache
-      this._scroll_contentView = newView;
-      if (newView) newView.addObserver('frame', this, f);
-      
-      // replace container
-      this.containerView.set('content', newView);
-      
-      this.contentViewFrameDidChange();
-    }
-  }.observes('contentView'),
   
   /** @private
     Invoked whenever the contentView's frame changes.  This will update the 
@@ -48445,7 +49287,7 @@ SC.MenuScrollView = SC.ScrollView.extend({
     edit the location of the contentView.
   */
   _scroll_verticalScrollOffsetDidChange: function() {
-    var offset = this.get('verticalScrollOffset') ;
+    var offset = this.get('verticalScrollOffset')+1 ;
     
     // update the offset for the contentView...
     var contentView = this.get('contentView');
@@ -48741,23 +49583,18 @@ SC.ProgressView = SC.View.extend(SC.Control, {
       context.setClass(classNames);
       inner = this.$('.sc-inner');
       animatedBackground = this.get('animatedBackgroundMatrix');
-      cssString = "width: "+value+"; ";
-      cssString = cssString + "left: "+offset+"; ";
+      inner.css('width', value).css('left',offset);
       if (animatedBackground.length === 3 ) {
-        backPosition = '0px -'+ 
-                      (animatedBackground[0] + 
-                      animatedBackground[1]*this._currentBackground)+'px';
+        inner.css('backgroundPosition', '0px -'+ 
+                (animatedBackground[0] + 
+                animatedBackground[1]*this._currentBackground)+'px');
         if(this._currentBackground===animatedBackground[2]-1
            || this._currentBackground===0){
           this._nextBackground *= -1;
         }
         this._currentBackground += this._nextBackground;
         
-        cssString = cssString + "backgroundPosition: "+backPosition+"; ";
-        //Instead of using css() set attr for faster perf.
-        inner.attr('style', cssString);
-      }else{
-        inner.attr('style', cssString);
+       
       }
     }
     
@@ -48903,9 +49740,9 @@ SC.RadioView = SC.FieldView.extend(
     var items = this.get('items'), loc = this.get('localize'),
       titleKey = this.get('itemTitleKey'), valueKey = this.get('itemValueKey'),
       isEnabledKey = this.get('itemIsEnabledKey'), 
-      iconKey = this.get('itemIconKey');
-    var ret = [], max = (items)? items.get('length') : 0 ;
-    var item, title, value, idx, isArray, isEnabled, icon;
+      iconKey = this.get('itemIconKey'),
+      ret = [], max = (items)? items.get('length') : 0,
+      item, title, value, idx, isArray, isEnabled, icon;
     
     for(idx=0;idx<max;idx++) {
       item = items.objectAt(idx); 
@@ -49000,7 +49837,7 @@ SC.RadioView = SC.FieldView.extend(
         if (icon) {
           url = (icon.indexOf('/')>=0) ? icon : SC.BLANK_IMAGE_URL;
           className = (url === icon) ? '' : icon ;
-          icon = '<img src="%@" class="icon %@" alt="" />'.fmt(url, className);
+          icon = '<img src="'+url+'" class="icon '+className+'" alt="" />';
         } else icon = '';
         
         selectionStateClassNames = this._getSelectionState(item, value, isArray, false);
@@ -49008,10 +49845,11 @@ SC.RadioView = SC.FieldView.extend(
         
         labelText = this.escapeHTML ? SC.RenderContext.escapeHTML(item[0]) : item[0];
         
-        context.push('<label class="sc-radio-button ', selectionStateClassNames, '">');
-        context.push('<input type="radio" value="', idx, '" name="', name, '" ', disabled, '/>');
-        context.push('<span class="button"></span>');
-        context.push('<span class="sc-button-label">', icon, labelText, '</span></label>');
+        context.push('<label class="sc-radio-button ', selectionStateClassNames, '">',
+                  '<input type="radio" value="', idx, '" name="', name, '" ', disabled, '/>',
+                  '<span class="button"></span>',
+                  '<span class="sc-button-label">', 
+                  icon, labelText, '</span></label>');
       }
       
       // first remove listener on existing radio buttons
@@ -49026,7 +49864,7 @@ SC.RadioView = SC.FieldView.extend(
         idx = parseInt(input.val(),0);
         item = (idx>=0) ? items[idx] : null;
 
-        input.attr('disabled', (!item[2]) ? 'disabled' : null);
+        input.attr('disabled', (!item[2]) || (!this.get('isEnabled')) ? 'disabled' : null);
         selectionState = this._getSelectionState(item, value, isArray, true);
 
         // set class of label
@@ -49037,7 +49875,6 @@ SC.RadioView = SC.FieldView.extend(
       }, this);
     
     }
-    
   },
   
   /** @private - 
@@ -49048,37 +49885,36 @@ SC.RadioView = SC.FieldView.extend(
        assigned to the the input field parent
   */
   _getSelectionState: function(item, value, isArray, shouldReturnObject) {
-      var sel, classNames, key;
-      
-      // determine if the current item is selected
-      if (item) {
-        sel = (isArray) ? (value.indexOf(item[1])>=0) : (value===item[1]);
-      } else {
-        sel = NO;
+    var sel, classNames, key;
+    
+    // determine if the current item is selected
+    if (item) {
+      sel = (isArray) ? (value.indexOf(item[1])>=0) : (value===item[1]);
+    } else {
+      sel = NO;
+    }
+    
+    // now set class names
+    classNames = {
+      sel: (sel && !isArray), mixed: (sel && isArray), disabled: (!item[2]) 
+    };
+    
+    if(shouldReturnObject) {
+      return classNames;
+    } else {
+      // convert object values to string
+      var classNameArray = [];
+      for(key in classNames) {
+        if(!classNames.hasOwnProperty(key)) continue;
+        if(classNames[key]) classNameArray.push(key);
       }
-      
-      // now set class names
-      classNames = {
-        sel: (sel && !isArray), mixed: (sel && isArray), disabled: (!item[2]) 
-      };
-      
-      if(shouldReturnObject) {
-        return classNames;
-      } else {
-        // convert object values to string
-        var classNameArray = [];
-        for(key in classNames) {
-          if(!classNames.hasOwnProperty(key)) continue;
-          if(classNames[key]) classNameArray.push(key);
-        }
-        return classNameArray.join(" ");
-      }
-      
+      return classNameArray.join(" ");
+    }
   },
 
   getFieldValue: function() {
-    var val = this.$input().filter(function() { return this.checked; }).val();
-    var items = this.get('displayItems') ;
+    var val = this.$input().filter(function() { return this.checked; }).val(),
+        items = this.get('displayItems') ;
     val = items[parseInt(val,0)];
     
     // if no items are selected there is a saved mixed value, return that...
@@ -49116,21 +49952,27 @@ SC.RadioView = SC.FieldView.extend(
   },
   
 
-  
   didCreateLayer: function() {
      this.setFieldValue(this.get('fieldValue'));
      var inputElems=this.$input();
      for( var i=0, inputLen = inputElems.length; i<inputLen; i++){
        SC.Event.add(inputElems[i], 'click', this, this._field_fieldValueDidChange) ;
      }
+     inputElems=this.$('label');
+      for(i=0, inputLen = inputElems.length; i<inputLen; i++){
+        SC.Event.add(inputElems[i], 'click', this, this._field_fieldValueDidChange) ;
+      }
    },
 
   willDestroyLayer: function() {
-       var inputElems=this.$input();
-        for( var i=0, inputLen = inputElems.length; i<inputLen; i++){
-            SC.Event.remove(this.$input()[i], 'click', this, this._field_fieldValueDidChange); 
-        }
-   
+    var inputElems=this.$input();
+    for( var i=0, inputLen = inputElems.length; i<inputLen; i++){
+      SC.Event.remove(this.$input()[i], 'click', this, this._field_fieldValueDidChange); 
+    }
+    inputElems=this.$('label');
+    for( i=0, inputLen = inputElems.length; i<inputLen; i++){
+      SC.Event.remove(inputElems[i], 'click', this, this._field_fieldValueDidChange); 
+    }
   },
   
   /**
@@ -49454,6 +50296,8 @@ SC.SegmentedView = SC.View.extend(SC.Control,
   */
   localize: YES,
   
+  align: SC.ALIGN_CENTER,
+  
   /**
     Change the layout direction to make this a vertical set of tabs instead
     of horizontal ones.
@@ -49649,6 +50493,7 @@ SC.SegmentedView = SC.View.extend(SC.Control,
     if (firstTime || (items !== last)) {
       this._seg_displayItems = items; // save for future
       this.renderDisplayItems(context, items) ;
+      context.addStyle('text-align', this.get('align'));
     }else{
     // update selection and active state
       var activeIndex = this.get('activeIndex');
@@ -49681,7 +50526,8 @@ SC.SegmentedView = SC.View.extend(SC.Control,
         isArray     = SC.isArray(value),
         activeIndex = this.get('activeIndex'),
         len         = items.length,
-        title, icon, url, className, ic, item, toolTip, width, i;
+        title, icon, url, className, ic, item, toolTip, width, i, stylesHash,
+        classArray;
 
     for(i=0; i< len; i++){
       ic = context.begin('a').attr('href', 'javascript:;');
@@ -49689,31 +50535,40 @@ SC.SegmentedView = SC.View.extend(SC.Control,
       title = item[0]; 
       icon = item[3];
       toolTip = item[5];
-      ic.addStyle('display', 'inline-block');
-      ic.addClass('sc-segment');
+      
+      stylesHash = {};
+      classArray = [];
+
+      if (this.get('layoutDirection') == SC.LAYOUT_HORIZONTAL) {
+        stylesHash['display'] = 'inline-block' ;
+      }
+
+      classArray.push('sc-segment');
+      
       if(!item[2]){
-        ic.addClass('disabled');
+        classArray.push('disabled');
       }
       if(i===0){
-        ic.addClass('sc-first-segment');
+        classArray.push('sc-first-segment');
       }
       if(i===(len-1)){
-        ic.addClass('sc-last-segment');
+        classArray.push('sc-last-segment');
       }
       if(i!==0 && i!==(len-1)){
-        ic.addClass('sc-middle-segment');
+        classArray.push('sc-middle-segment');
       }      
       if( isArray ? (value.indexOf(item[1])>=0) : (item[1]===value)){
-        ic.addClass('sel');
+        classArray.push('sel');
       }
       if(activeIndex === i) {
-        ic.addClass('active') ;
+        classArray.push('active') ;
       }
       if(item[4]){
         width=item[4];
-        ic.addStyle('width', width+'px');
+        stylesHash['width'] = width+'px';
       }
-
+      ic.addClass(classArray);
+      ic.addStyle(stylesHash);
       if(toolTip) {
         ic.attr('title', toolTip) ;
       }
@@ -49953,6 +50808,675 @@ SC._segmented_fetchItem = function(k) {
 
 
 
+/* >>>>>>>>>> BEGIN source/views/select.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+/**
+  @class
+
+  SelectView has a functionality similar to that of SelectField
+
+  Clicking the SelectView button displays a menu pane with a
+  list of items. The selected item will be displayed on the button.
+  User has the option of enabling checkbox for the selected menu item.
+
+  I AM CHANGING THIS AND BREAKING APIs, so I have renamed it (and put it in a more
+  logical place) so that I don't break anyone else's current use of SelectButtonView...
+  even though I have a suspiscion that no one uses it.
+  
+  @extends SC.ButtonView
+  @version 1.0
+  @author Alex Iskander, Mohammed Ashik
+*/
+sc_require('views/button');
+
+SC.SelectView = SC.ButtonView.extend(
+/** @scope SC.SelectView.prototype */ {
+
+  /**
+    An array of items that will be form the menu you want to show.
+
+    @property
+    @type {Array}
+  */
+  items: [],
+
+  /**
+    Binding default for an array of items
+
+    @property
+    @default SC.Binding.multiple()
+  */
+  itemsBindingDefault: SC.Binding.multiple(),
+
+  /**
+    If you set this to a non-null value, then the name shown for each
+    menu item will be pulled from the object using the named property.
+    if this is null, the collection items themselves will be used.
+
+    @property
+    @type {String}
+    @default: null
+  */
+  itemTitleKey: null,
+
+  /**
+    If you set this to a non-null value, then the value of this key will
+    be used to sort the items.  If this is not set, then itemTitleKey will
+    be used.
+
+    @property
+    @type: {String}
+    @default: null
+  */
+  itemSortKey: null,
+
+  /**
+     Set this to a non-null value to use a key from the passed set of items
+     as the value for the options popup.  If you don't set this, then the
+     items themselves will be used as the value.
+
+     @property
+     @type {String}
+     @default null
+  */
+  itemValueKey: null,
+
+  /**
+     Key used to extract icons from the items array
+  */
+  itemIconKey: null,
+  
+  /**
+    Key to use to identify separators.
+  */
+  itemSeparatorKey: "separator",
+
+  /**
+    If true, the empty name will be localized.
+
+    @property
+    @type {Boolean}
+    @default YES
+  */
+  localize: YES,
+
+  /**
+    if true, it means that no sorting will occur, items will appear
+    in the same order as in the array
+
+    @property
+    @type {Boolean}
+    @default YES
+  */
+  disableSort: YES,
+
+  /**
+
+    @property
+    @default ['sc-select-button']
+  */
+  classNames: ['sc-select-view'],
+
+  /**
+    List of actual menu items, handed off to the menu view.
+
+    @property
+    @private
+    @type:{Array}
+  */
+  _itemList: [],
+
+  /**
+    Current selected menu item
+
+    @property
+    @private
+    @default null
+  */
+  _currentSelItem: null,
+
+  /**
+    Property to set the index of the selected menu item. This in turn
+    is used to calculate the preferMatrix.
+
+    @property
+    @type {Number}
+    @default null
+    @private
+  */
+  _itemIdx: null,
+
+  /**
+     Current Value of the selectButton
+
+     @property
+     @default null
+  */
+  value: null ,
+
+  /**
+    if this property is set to 'YES', a checbox is shown next to the
+    selected menu item.
+
+    @private
+    @default YES
+  */
+  showCheckbox: YES,
+
+  /**
+    Default value of the select button.
+     This will be the first item from the menu item list.
+
+    @private
+  */
+  _defaultVal: null,
+
+  /**
+    Default title of the select button.
+     This will be the title corresponding to the _defaultVal.
+
+    @private
+  */
+  _defaultTitle: null,
+
+  /**
+    Default icon of the select button.
+     This will be the icon corresponding to the _defaultVal.
+
+    @private
+  */
+  _defaultIcon: null,
+
+  /**
+    @private
+
+    The button theme will be popup
+  */
+  theme: 'popup',
+
+  /**
+    Render method gets triggered when these properties change
+
+    @property
+    @type{SC.Array}
+  */
+  displayProperties: ['icon', 'value','controlSize','items'],
+
+  /**
+    Prefer matrix to position the select button menu such that the
+    selected item for the menu item will appear aligned to the
+    the button. The value at the second index(0) changes based on the
+    postion(index) of the menu item in the menu pane.
+
+    @property
+    @type {Array}
+    @default null
+
+  */
+  preferMatrix: null,
+
+  /**
+    Property to set the menu item height. This in turn is used for
+    the calculation of prefMatrix.
+
+    @property
+    @type {Number}
+    @default 20
+  */
+  CUSTOM_MENU_ITEM_HEIGHT: 20,
+
+  /**
+    Binds the button's selection state to the menu's visibility.
+
+    @private
+  */
+  isSelectedBinding: '*menu.isVisibleInWindow',
+
+  /**
+    If this property is set to 'YES', the menu pane will be positioned
+    below the anchor.
+
+    @private
+    @default NO
+  */
+  positionMenuBelow: NO,
+
+  /**
+    lastMenuWidth is the width of the last menu which was created from
+    the items of this select button.
+
+    @private
+  */
+  lastMenuWidth: null,
+
+  /**
+    Example view used for menu items.
+  */
+  exampleView: null,
+  
+  /**
+    customView menu offset width
+  */
+  customViewMenuOffsetWidth: 0,
+
+  /**
+    This is a property for enabling/disabling ellipsis
+
+    @private
+    @default YES
+  */
+  needsEllipsis: YES,
+
+  /**
+    This property allows you at add extra padding to the height
+    of the menu pane.
+
+    @default 0
+    @property {Number} heightPadding for menu pane.
+  */
+  menuPaneHeightPadding: 0,
+  
+  /**
+  The amount of space to add to the calculated width of the menu item strings to
+  determine the width of the menu pane.
+  */
+  menuItemPadding: 35,
+
+  /**
+    Left Alignment based on the size of the button
+
+    @private
+  */
+  leftAlign: function() {
+    var val = 0, controlSize = this.get('controlSize') ;
+    
+    // what. the. heck?
+    // no, I don't want to shift the menu to the left. Yet.
+    if(controlSize === SC.SMALL_CONTROL_SIZE) val = -14 ;
+    if(controlSize === SC.REGULAR_CONTROL_SIZE) val = -16 ;
+    
+    return val;
+  }.property('controlSize'),
+
+  /**
+    override this method to implement your own sorting of the menu. By
+    default, menu items are sorted using the value shown or the sortKey
+
+    @param{SC.Array} objects the unsorted array of objects to display.
+    @returns sorted array of objects
+  */
+  sortObjects: function(objects) {
+    if(!this.get('disableSort')){
+      var nameKey = this.get('itemSortKey') || this.get('itemTitleKey') ;
+      objects = objects.sort(function(a,b) {
+        if (nameKey) {
+          a = a.get ? a.get(nameKey) : a[nameKey] ;
+          b = b.get ? b.get(nameKey) : b[nameKey] ;
+        }
+        return (a<b) ? -1 : ((a>b) ? 1 : 0) ;
+      }) ;
+    }
+    return objects ;
+  },
+
+  /**
+    render method
+
+    @private
+  */
+  render: function(context,firstTime) {
+    arguments.callee.base.apply(this,arguments);
+    var layoutWidth, items, len, nameKey, iconKey, valueKey, separatorKey, showCheckbox,
+      currentSelectedVal, shouldLocalize, isSeparator, itemList, isChecked,
+      idx, name, icon, value, item;
+
+    items = this.get('items') ;
+    items = this.sortObjects(items) ;
+    len = items.length ;
+
+    //Get the namekey, iconKey and valueKey set by the user
+    nameKey = this.get('itemTitleKey') ;
+    iconKey = this.get('itemIconKey') ;
+    valueKey = this.get('itemValueKey') ;
+    separatorKey = this.get('itemSeparatorKey');
+    showCheckbox = this.get('showCheckbox') ;
+
+    //get the current selected value
+    currentSelectedVal = this.get('value') ;
+
+    // get the localization flag.
+    shouldLocalize = this.get('localize') ;
+
+    //itemList array to set the menu items
+    itemList = [] ;
+
+    //to set the 'checkbox' property of menu items
+    isChecked = YES ;
+
+    //index for finding the first item in the list
+    idx = 0 ;
+
+    items.forEach(function(object) {
+    if (object) {
+
+      //Get the name value. If value key is not specified convert obj
+      //to string
+      name = nameKey ? (object.get ?
+        object.get(nameKey) : object[nameKey]) : object.toString() ;
+
+      // localize name if specified.
+      name = shouldLocalize? name.loc() : name ;
+
+      //Get the icon value
+      icon = iconKey ? (object.get ? 
+        object.get(iconKey) : object[iconKey]) : null ;
+      if (SC.none(object[iconKey])) icon = null ;
+
+      // get the value using the valueKey or the object
+        value = (valueKey) ? (object.get ?
+        object.get(valueKey) : object[valueKey]) : object ;
+
+      if (!SC.none(currentSelectedVal) && !SC.none(value)){
+        if( currentSelectedVal === value ) {
+          this.set('title', name) ;
+          this.set('icon', icon) ;
+        }
+      }
+
+      //Check if the item is currentSelectedItem or not
+      if(value === this.get('value')) {
+
+        //set the _itemIdx - To change the prefMatrix accordingly.
+        this.set('_itemIdx', idx) ;
+        isChecked = !showCheckbox ? NO : YES ;
+      }
+      else {
+        isChecked = NO ;
+      }
+      
+      // get the separator
+      isSeparator = separatorKey ? (object.get ? object.get(separatorKey) : object[separatorKey]) : NO;
+
+      //Set the first item from the list as default selected item
+      if (idx === 0) {
+        this._defaultVal = value ;
+        this._defaultTitle = name ;
+        this._defaultIcon = icon ;
+      }
+
+      var item = SC.Object.create({
+        separator: isSeparator,
+        title: name,
+        icon: icon,
+        value: value,
+        isEnabled: YES,
+        checkbox: isChecked,
+        action: this.displaySelectedItem
+      }) ;
+
+      //Set the items in the itemList array
+      itemList.push(item);
+
+    }
+
+    idx += 1 ;
+
+    this.set('_itemList', itemList) ;
+    }, this ) ;
+
+    if(firstTime) {
+      this.invokeLast(function() {
+        var value = this.get('value') ;
+        if(SC.none(value)) {
+          this.set('value', this._defaultVal) ;
+          this.set('title', this._defaultTitle) ;
+          this.set('icon', this._defaultIcon) ;
+        }
+      });
+    }
+
+    //Set the preference matrix for the menu pane
+    this.changeSelectButtonPreferMatrix(this._itemIdx) ;
+
+  },
+
+  /**
+    Button action handler
+
+    @private
+    @param {DOMMouseEvent} evt mouseup event that triggered the action
+  */
+  _action: function( evt )
+  {
+    var buttonLabel, menuWidth, scrollWidth, lastMenuWidth, offsetWidth,
+      items, elementOffsetWidth, largestMenuWidth, item, element, idx,
+      currSel, itemList, menuControlSize, menuHeightPadding, customView,
+      customMenuView, menu, itemsLength;
+      
+    buttonLabel = this.$('.sc-button-label')[0] ;
+    // Get the length of the text on the button in pixels
+    menuWidth = this.get('layer').offsetWidth ;
+    scrollWidth = buttonLabel.scrollWidth ;
+    lastMenuWidth = this.get('lastMenuWidth') ;
+    if(scrollWidth) {
+       // Get the original width of the label in the button
+       offsetWidth = buttonLabel.offsetWidth ;
+       if(scrollWidth && offsetWidth) {
+          menuWidth = menuWidth + scrollWidth - offsetWidth ;
+       }
+    }
+    if (!lastMenuWidth || (menuWidth > lastMenuWidth)) {
+      lastMenuWidth = menuWidth ;
+    }
+
+    items = this.get('_itemList') ;
+
+    var customViewClassName = this.get('customViewClassName') ;
+    var customViewMenuOffsetWidth = this.get('customViewMenuOffsetWidth') ;
+    var className = 'sc-view sc-pane sc-panel sc-palette sc-picker sc-menu select-button sc-scroll-view sc-menu-scroll-view sc-container-view menuContainer sc-button-view sc-menu-item sc-regular-size' ;
+    className = customViewClassName ? (className + ' ' + customViewClassName) : className ;
+    
+    SC.prepareStringMeasurement("", className);
+    for (idx = 0, itemsLength = items.length; idx < itemsLength; ++idx) {
+      //getting the width of largest menu item
+      item = items.objectAt(idx) ;
+      elementOffsetWidth = SC.measureString(item.title).width;
+
+      if (!largestMenuWidth || (elementOffsetWidth > largestMenuWidth)) {
+        largestMenuWidth = elementOffsetWidth ;
+      }
+    }
+    SC.teardownStringMeasurement();
+
+    lastMenuWidth = (largestMenuWidth + this.menuItemPadding > lastMenuWidth) ?
+                      largestMenuWidth + this.menuItemPadding : lastMenuWidth ;
+
+    // Get the window size width and compare with the lastMenuWidth.
+    // If it is greater than windows width then reduce the maxwidth by 25px
+    // so that the ellipsis property is enabled by default
+    var maxWidth = SC.RootResponder.responder.get('currentWindowSize').width;
+    if(lastMenuWidth > maxWidth) {
+      lastMenuWidth = (maxWidth - 25) ;
+    }
+
+    this.set('lastMenuWidth',lastMenuWidth) ;
+    currSel = this.get('_currentSelItem') ;
+    itemList = this.get('_itemList') ;
+    menuControlSize = this.get('controlSize') ;
+    menuHeightPadding = this.get('menuPaneHeightPadding') ;
+
+    // get the user defined custom view
+    customView = this.get('exampleView') ;
+    customMenuView = customView ? customView : SC.MenuItemView ;
+
+    menu  = SC.MenuPane.create({
+
+      /**
+        Class name - select-button-item
+      */
+      classNames: ['select-button'],
+
+      /**
+        The menu items are set from the itemList property of SelectButton
+
+        @property
+      */
+      items: itemList,
+
+      /**
+        Example view which will be used to create the Menu Items
+
+        @default SC.MenuItemView
+        @type SC.View
+      */
+      exampleView: customMenuView,
+
+      /**
+        This property enables all the items and makes them selectable.
+
+        @property
+      */
+      isEnabled: YES,
+
+      menuHeightPadding: menuHeightPadding,
+
+      preferType: SC.PICKER_MENU,
+      itemHeightKey: 'height',
+      layout: { width: lastMenuWidth },
+      controlSize: menuControlSize,
+      itemWidth: lastMenuWidth,
+      contentView: SC.View.extend({
+      })
+    }) ;
+
+    // no menu to toggle... bail...
+    if (!menu) return NO ;
+    menu.popup(this, this.preferMatrix) ;
+    menu.set('currentSelectedMenuItem', currSel) ;
+    return YES ;
+  },
+
+  /**
+     Action method for the select button menu items
+
+  */
+  displaySelectedItem: function() {
+    var menuView, currSel, itemViews, title, val, itemIdx = 0, button, object,
+      len, found = null, objTmp;
+    
+    //Get MenuPane, currentSelectedMenuItem & menuItemView
+    // Get the main parent view to show the menus
+      
+    menuView = this.parentMenu() ;
+    currSel = menuView.get('currentSelectedMenuItem') ;
+    itemViews = menuView.menuItemViews ;
+    
+    //  Fetch the index of the current selected item
+    if (currSel && itemViews) {
+      itemIdx = itemViews.indexOf(currSel) ;
+    }
+
+    // Get the select button View
+    button = menuView.get('anchor') ;
+
+    // set the value and title
+    object = menuView.get('items') ;
+    len = object.length ;
+
+    while (!found && (--len >= 0)) {
+      objTmp = object[len];
+      title = !SC.none(objTmp.title) ? objTmp.title: object.toString() ;
+      val =  !SC.none(objTmp.value) ? objTmp.value: title ;
+
+      if (title === this.get('value') && (itemIdx === len)) {
+        found = object ;
+        button.set('value', val) ;
+        button.set('title', title) ;
+      }
+    }
+
+    // set the icon, currentSelectedItem and itemIdx
+    button.set('icon', this.get('icon')).set('_currentSelItem', currSel).
+      set('_itemIdx', itemIdx) ;
+  },
+
+  /**
+     Set the "top" attribute in the prefer matrix property which will
+     position menu such that the selected item in the menu will be
+     place aligned to the item on the button when menu is opened.
+  */
+  changeSelectButtonPreferMatrix: function() {
+    var preferMatrixAttributeTop = 0 ,
+      itemIdx = this.get('_itemIdx') ,
+      leftAlign = this.get('leftAlign'), defPreferMatrix, tempPreferMatrix ;
+
+    if(this.get('positionMenuBelow')) {
+      defPreferMatrix = [leftAlign, 4, 3] ;
+      this.set('preferMatrix', defPreferMatrix) ;
+    }
+    else {
+      if(itemIdx) {
+        preferMatrixAttributeTop = itemIdx * this.CUSTOM_MENU_ITEM_HEIGHT ;
+      }
+      tempPreferMatrix = [leftAlign, -preferMatrixAttributeTop, 2] ;
+      this.set('preferMatrix', tempPreferMatrix) ;
+    }
+  },
+
+  /**
+    @private
+
+    Holding down the button should display the menu pane.
+  */
+  mouseDown: function(evt) {
+    if (!this.get('isEnabled')) return YES ; // handled event, but do nothing
+    this.set('isActive', YES);
+    this._isMouseDown = YES;
+    this.becomeFirstResponder() ;
+    this._action() ;
+    return YES ;
+  },
+
+  /**
+    @private
+
+    Handle Key event - Down arrow key
+  */
+  keyDown: function(event) {
+    if ( this.interpretKeyEvents(event) ) {
+      return YES;
+    }
+    else {
+      arguments.callee.base.apply(this,arguments);
+    }
+  },
+
+  /**
+    @private
+
+    Pressing the Up or Down arrow key should display the menu pane
+  */
+  interpretKeyEvents: function(event) {
+    if (event) {
+      if ((event.keyCode === 38 || event.keyCode === 40)) {
+        this._action() ;
+      }
+      else if (event.keyCode === 27) {
+        this.resignFirstResponder() ;
+      }
+    }
+    return arguments.callee.base.apply(this,arguments);
+  }
+
+}) ;
+
+
 /* >>>>>>>>>> BEGIN source/views/select_field.js */
 // ========================================================================
 // SproutCore -- JavaScript Application Framework
@@ -50095,7 +51619,7 @@ SC.SelectFieldView = SC.FieldView.extend(
         if (emptyName) {
           if (shouldLocalize) emptyName = emptyName.loc() ;
           if(firstTime){
-            context.push('<option value="***">%@</option>'.fmt(emptyName)) ;
+            context.push('<option value="***">'+emptyName+'</option>') ;
             context.push('<option disabled="disabled"></option>') ;
           }else{
             el=document.createElement('option');
@@ -50128,7 +51652,7 @@ SC.SelectFieldView = SC.FieldView.extend(
           // render HTML
           var disable = (this.validateMenuItem && this.validateMenuItem(value, name)) ? '' : 'disabled="disabled" ' ;
           if(firstTime){
-            context.push('<option %@value="%@">%@</option>'.fmt(disable,value,name)) ;
+            context.push('<option '+disable+'value="'+value+'">'+name+'</option>') ;
           } else{
             el=document.createElement('option');
             el.value=value;
@@ -50254,6 +51778,8 @@ SC.SelectFieldView = SC.FieldView.extend(
 
   didCreateLayer: function() {
     var input = this.$input();
+    if (this.get('isEnabled') == false)
+      this.$()[0].disabled = true;
     SC.Event.add(input, 'blur', this, this.fieldDidBlur);
     SC.Event.add(input, 'focus',this, this.fieldDidFocus);
     return arguments.callee.base.apply(this,arguments);
@@ -50357,29 +51883,30 @@ SC.SliderView = SC.View.extend(SC.Control,
   render: function(context, firstTime) {
     arguments.callee.base.apply(this,arguments);
     
-    var min = this.get('minimum');
-    var max = this.get('maximum');
-    var value = this.get('value');
+    var min = this.get('minimum'),
+        max = this.get('maximum'),
+        value = this.get('value'),
+        step = this.get('step');
 
     // determine the constrained value.  Must fit within min & max
     value = Math.min(Math.max(value, min), max);
 
     // limit to step value
-    var step = this.get('step');
     if (!SC.none(step) && step !== 0) {
       value = Math.round(value / step) * step;
     }
     
     // determine the percent across
-    value = Math.floor((value - min) / (max - min) * 100);
+    if(value!==0) value = Math.floor((value - min) / (max - min) * 100);
     
     if(firstTime) {
       var blankImage = SC.BLANK_IMAGE_URL;
-      context.push('<span class="sc-inner">');
-      context.push('<span class="sc-leftcap"></span>');
-      context.push('<span class="sc-rightcap"></span>');
-      context.push('<img src="', blankImage, '" class="sc-handle" style="left: ', value, '%" />');
-      context.push('</span>');
+      context.push('<span class="sc-inner">',
+                    '<span class="sc-leftcap"></span>',
+                    '<span class="sc-rightcap"></span>',
+                    '<img src="', blankImage, 
+                    '" class="sc-handle" style="left: ', value, '%" />',
+                    '</span>');
     }
     else {
       this.$(this.get('handleSelector')).css('left', value + "%");
@@ -50409,14 +51936,44 @@ SC.SliderView = SC.View.extend(SC.Control,
     return ret ;
   },
   
+  /** @private 
+    On touch start, set active only if enabled.
+  */    
+  touchStart: function(evt) {
+    this.mouseDown(evt);
+  },
+
+
+  
+  /** @private 
+    On touch start, set active only if enabled.
+  */    
+  touchMoved: function(evt) {
+    this.mouseDragged(evt);
+  },
+
+
+  /** @private
+    ON mouse up, trigger the action only if we are enabled and the mouse was released inside of the view.
+  */  
+  touchEnd: function(evt) {
+    this.mouseUp(evt);
+  },
+  
   /** @private
     Updates the handle based on the mouse location of the handle in the
     event.
   */
   _triggerHandle: function(evt) {
-    var loc = this.convertFrameFromView({ x: evt.pageX }).x ;
-    var width = this.get('frame').width ;
+    var width = this.get('frame').width,
+        min = this.get('minimum'), max=this.get('maximum'),  
+        step = this.get('step'), v=this.get('value'), loc;
 
+    if (evt.changedTouches && evt.changedTouches.length > 0) {
+      var changed = evt.changedTouches[0];
+      loc = this.convertFrameFromView({ x: changed.pageX }).x;
+    }else loc = this.convertFrameFromView({ x: evt.pageX }).x,
+    
     // constrain loc to 8px on either side (left to allow knob overhang)
     loc = Math.max(Math.min(loc,width-8), 8) - 8;
     width -= 16 ; // reduce by margin
@@ -50424,9 +51981,6 @@ SC.SliderView = SC.View.extend(SC.Control,
     // convert to percentage
     loc = loc / width ;
     
-    var min = this.get('minimum'),max=this.get('maximum');  
-    var step = this.get('step'), v=this.get('value');
-
     // convert to value using minimum/maximum then constrain to steps
     loc = min + ((max-min)*loc);
     if (step !== 0) loc = Math.round(loc / step) * step ;
@@ -50468,9 +52022,9 @@ SC.SliderView = SC.View.extend(SC.Control,
      }
      
      if (evt.which === 37 || evt.which === 38 || evt.which === 39 || evt.which === 40){
-       var min = this.get('minimum'),max=this.get('maximum');  
-       var step = this.get('step');
-       var size = max-min, val=0, calculateStep;
+       var min = this.get('minimum'),max=this.get('maximum'),
+          step = this.get('step'),
+          size = max-min, val=0, calculateStep;
      
        if (evt.which === 37 || evt.which === 38 ){
          if(step === 0){
@@ -50601,7 +52155,7 @@ SC.SourceListGroupView = SC.View.extend(SC.Control, SC.CollectionGroup,
   
   render: function(context, firstTime) {
     context.push('<a href="javascript:;" class="sc-source-list-label sc-disclosure-view sc-button-view button disclosure no-disclosure">') ;
-    context.push('<img src="%@" class="button" />'.fmt(SC.BLANK_IMAGE_URL)) ;
+    context.push('<img src="'+SC.BLANK_IMAGE_URL+'" class="button" />') ;
     context.push('<span class="label"></span></a>') ;
   },
   
@@ -50792,9 +52346,7 @@ SC.SplitDividerView = SC.View.extend(
     return (splitView) ? splitView.mouseDownInThumbView(evt, this) : arguments.callee.base.apply(this,arguments);
   },
   
-  // FIXME: how does this work with event capture?
   doubleClick: function(evt) {
-    console.log('doubleClick in split divider');
     var splitView = this.get('splitView');
     return (splitView) ? splitView.doubleClickInThumbView(evt, this) : arguments.callee.base.apply(this,arguments);
   }
@@ -50854,9 +52406,9 @@ SC.RESIZE_BOTTOM_RIGHT = 'resize-bottom-right' ;
   clicking on a divider again will restore a collapsed view.  A user can also
   start to drag the divider to show the collapsed view.
   
-  You can programmatically control collapsing behavior using various properties
-  on either the split view or its child views, and/or by implementing the
-  method splitViewCanCollapse on a delegate object.
+  You can programmatically control collapsing behavior using various 
+  properties on either the split view or its child views, and/or by 
+  implementing the method splitViewCanCollapse on a delegate object.
   
   Finally, SplitViews can layout their child views either horizontally or
   vertically.  To choose the direction of layout set the layoutDirection
@@ -50885,8 +52437,6 @@ SC.SplitView = SC.View.extend(
 /** @scope SC.SplitView.prototype */ {
   
   classNames: ['sc-split-view'],
-  
-  childLayoutProperties: 'layoutDirection dividerThickness autoresizeBehavior'.w(),
   
   displayProperties: ['layoutDirection'],
   
@@ -50922,7 +52472,8 @@ SC.SplitView = SC.View.extend(
     A number less than one will be treated as a percentage, while a number 
     greater than one will be treated as a pixel width.
     
-    The thickness will be applied to the opposite view defined by autoresizeBehavior.
+    The thickness will be applied to the opposite view defined by 
+    autoresizeBehavior.
     
     @property {Number}
   */
@@ -50963,8 +52514,8 @@ SC.SplitView = SC.View.extend(
     Used by split divider to decide if the view can be collapsed.
   */
   canCollapseView: function(view) {
-    // console.log('%@.canCollapseView(%@)'.fmt(this, view));
-    return this.invokeDelegateMethod(this.delegate, 'splitViewCanCollapse', this, view) ;
+    return this.invokeDelegateMethod(this.delegate, 'splitViewCanCollapse', 
+      this, view) ;
   },
   
   /**
@@ -50974,14 +52525,12 @@ SC.SplitView = SC.View.extend(
     @returns the view with the width.
   */
   thicknessForView: function(view) {
-    // console.log('%@.thicknessForView(%@)'.fmt(this, view));
     var direction = this.get('layoutDirection') ,
         ret = view.get('frame') ;
     return (direction === SC.LAYOUT_HORIZONTAL) ? ret.width : ret.height ;
   },
   
   createChildViews: function() {
-    // console.log('%@.createChildViews()'.fmt(this));
     var childViews = [] ,
         viewAry = ['topLeftView', 'dividerView', 'bottomRightView'] ,
         view, idx, len ;
@@ -51008,7 +52557,6 @@ SC.SplitView = SC.View.extend(
     that they can resize appropriately.
   */
   updateChildLayout: function() {
-    // console.log('%@.updateChildLayout()'.fmt(this));
     var topLeftView = this.get('topLeftView') ,
         bottomRightView = this.get('bottomRightView') ,
         dividerView = this.get('dividerView') ,
@@ -51021,10 +52569,6 @@ SC.SplitView = SC.View.extend(
         autoresizeBehavior = this.get('autoresizeBehavior') ,
         layout , isCollapsed ;
     
-    // console.log('topLeftThickness == %@'.fmt(topLeftThickness));
-    // console.log('dividerThickness == %@'.fmt(dividerThickness));
-    // console.log('splitViewThickness == %@'.fmt(splitViewThickness));
-    // console.log('bottomRightThickness == %@'.fmt(bottomRightThickness));
     
     // top/left view
     isCollapsed = topLeftView.get('isCollapsed') || NO ;
@@ -51065,8 +52609,6 @@ SC.SplitView = SC.View.extend(
           break ;
       }
     }
-    // console.log('topLeftView layout %@'.fmt(SC.inspect(layout)));
-    // console.log(topLeftView);
     topLeftView.set('layout', layout);
     
     // split divider view
@@ -51099,8 +52641,6 @@ SC.SplitView = SC.View.extend(
             break ;
         }
       } else {
-        // console.log('setting vertical divider layout');
-        // console.log('autoresizeBehavior is %@'.fmt(autoresizeBehavior));
         delete layout.width ;
         layout.height = dividerThickness ;
         layout.left = 0 ;
@@ -51127,8 +52667,6 @@ SC.SplitView = SC.View.extend(
             break ;
         }
       }
-      // console.log('dividerView layout %@'.fmt(SC.inspect(layout)));
-      // console.log(dividerView);
       dividerView.set('layout', layout);
     }
     
@@ -51171,21 +52709,14 @@ SC.SplitView = SC.View.extend(
           break ;
       }
     }
-    // console.log('bottomRightView layout %@'.fmt(SC.inspect(layout)));
-    // console.log(bottomRightView);
     bottomRightView.set('layout', layout);
     
-    // topLeftView.updateDisplayLayout();
-    // dividerView.updateDisplayLayout();
-    // bottomRightView.updateDisplayLayout();
     this.notifyPropertyChange('topLeftThickness')
         .notifyPropertyChange('bottomRightThickness');
   },
   
   /** @private */
   renderLayout: function(context, firstTime) {
-    // console.log('%@.renderLayout(%@, %@)'.fmt(this, context, firstTime));
-    // console.log('%@.frame = %@'.fmt(this, SC.inspect(this.get('frame'))));
     if (firstTime || this._recalculateDivider) {
       if (!this.get('thumbViewCursor')) {
         this.set('thumbViewCursor', SC.Cursor.create()) ;
@@ -51200,7 +52731,6 @@ SC.SplitView = SC.View.extend(
       dividerThickness = (!SC.none(dividerThickness)) ? dividerThickness : 7 ;
       // Turn a flag on to recalculate the spliting if the desired thickness
       // is a percentage
-      // debugger;
       if(this._recalculateDivider===undefined && desiredThickness<1) {
         this._recalculateDivider=YES;
       }
@@ -51215,13 +52745,16 @@ SC.SplitView = SC.View.extend(
               fr.width : fr.height ;
       }
       // if default thickness is < 1, convert from percentage to absolute
-      if (SC.none(desiredThickness) || (desiredThickness > 0 && desiredThickness < 1)) {
-        desiredThickness =  Math.floor((splitViewThickness - (dividerThickness))* (desiredThickness || 0.5)) ;
+      if (SC.none(desiredThickness) || 
+        (desiredThickness > 0 && desiredThickness < 1)) {
+        desiredThickness =  Math.floor((splitViewThickness - 
+                            (dividerThickness))* (desiredThickness || 0.5)) ;
       }
       if (autoResizeBehavior === SC.RESIZE_BOTTOM_RIGHT) {
         this._desiredTopLeftThickness = desiredThickness ;
       } else { // (autoResizeBehavior === SC.RESIZE_TOP_LEFT)
-        this._desiredTopLeftThickness =  splitViewThickness - dividerThickness - desiredThickness ;
+        this._desiredTopLeftThickness =  splitViewThickness 
+                                      - dividerThickness - desiredThickness ;
       }
       
       // make sure we don't exceed our min and max values, and that collapse 
@@ -51248,28 +52781,14 @@ SC.SplitView = SC.View.extend(
   
   /** @private */
   render: function(context, firstTime) {
-    // console.log('%@.render(%@, %@)'.fmt(this, context, firstTime));
-    // console.log('%@.frame = %@'.fmt(this, SC.inspect(this.get('frame'))));
     arguments.callee.base.apply(this,arguments) ;
     
     if (this._inLiveResize) this._setCursorStyle() ;
     
-    if (firstTime) {
-      var dir = this.get('layoutDirection') ;
-      if (dir===SC.LAYOUT_HORIZONTAL) context.addClass('sc-horizontal') ;
-      else context.addClass('sc-vertical') ;
-    }
+    var dir = this.get('layoutDirection') ;
+    if (dir===SC.LAYOUT_HORIZONTAL) context.addClass('sc-horizontal') ;
+    else context.addClass('sc-vertical') ;
   },
-  
-  // layoutDidChangeFor: function(childView) {
-  //   // console.log('%@.layoutChildViews(%@)'.fmt(this, childView));
-  //   arguments.callee.base.apply(this,arguments) ;
-  // },
-  // 
-  // layoutChildViews: function() {
-  //   // console.log('%@.layoutChildViews()'.fmt(this));
-  //   arguments.callee.base.apply(this,arguments) ;
-  // },
   
   /**
     Update the split view's layout based on mouse movement.
@@ -51281,8 +52800,6 @@ SC.SplitView = SC.View.extend(
     @returns {Boolean}
   */
   mouseDownInThumbView: function(evt, thumbView) {
-    // console.log('%@.mouseDownInThumbView(%@, %@)'.fmt(this, evt, thumbView));
-    // console.log(evt.originalEvent);
     var responder = this.getPath('pane.rootResponder') ;
     if (!responder) return NO ; // nothing to do
       
@@ -51307,17 +52824,14 @@ SC.SplitView = SC.View.extend(
   },
   
   mouseDragged: function(evt) {
-    // console.log('%@.mouseDragged(%@)'.fmt(this, evt));
-    // console.log(evt.originalEvent);
-    var offset = (this._layoutDirection === SC.LAYOUT_HORIZONTAL) ? evt.pageX - this._mouseDownX : evt.pageY - this._mouseDownY ;
+    var offset = (this._layoutDirection === SC.LAYOUT_HORIZONTAL) ? evt.pageX 
+                - this._mouseDownX : evt.pageY - this._mouseDownY ;
     this._updateTopLeftThickness(offset) ;
     return YES;
   },
   
   mouseUp: function(evt) {
-    // console.log('%@.mouseUp(%@, %@)'.fmt(this, evt));
-    // console.log(evt.originalEvent);
-		if (this._inLiveResize === YES) {
+    if (this._inLiveResize === YES) {
     	this._thumbView = null ; // avoid memory leaks
     	this._inLiveResize = NO ;
     	this.endLiveResize() ;
@@ -51328,8 +52842,6 @@ SC.SplitView = SC.View.extend(
   },
   
   doubleClickInThumbView: function(evt, thumbView) {
-    // console.log('%@.mouseDragged(%@, %@)'.fmt(this, evt, thumbView));
-    // console.log(evt.originalEvent);
     var view = this._topLeftView,
         isCollapsed = view.get('isCollapsed') || NO ;
     if (!isCollapsed && !this.canCollapseView(view)) {
@@ -51340,13 +52852,13 @@ SC.SplitView = SC.View.extend(
     
     if (!isCollapsed) {
       // remember thickness in it's uncollapsed state
-      this._uncollapsedThickness = this.getThicknessForView(view)  ;
+      this._uncollapsedThickness = this.thicknessForView(view)  ;
       // and collapse
       // this.setThicknessForView(view, 0) ;
       if (view === this._topLeftView) {
-        this._topLeftViewThickness = 0 ;
+        this._updateTopLeftThickness(this.topLeftThickness()*-1) ;
       } else {
-        this._bottomRightViewThickness = 0 ;
+        this._updateBottomRightThickness(this.bottomRightThickness()*-1) ;
       }
       
       // if however the splitview decided not to collapse, clear:
@@ -51356,9 +52868,9 @@ SC.SplitView = SC.View.extend(
     } else {
       // uncollapse to the last thickness in it's uncollapsed state
       if (view === this._topLeftView) {
-        this._topLeftViewThickness = this._uncollapsedThickness ;
+        this._updateTopLeftThickness(this._uncollapsedThickness) ;
       } else {
-        this._bottomRightViewThickness = this._uncollapsedThickness ;
+        this._updateBottomRightThickness(this._uncollapsedThickness) ;
       }
       view._uncollapsedThickness = null ;
     }
@@ -51368,8 +52880,93 @@ SC.SplitView = SC.View.extend(
   
   /** @private */
   _updateTopLeftThickness: function(offset) {
-    // console.log('%@._updateTopLeftThickness(%@)'.fmt(this, offset));
-    // console.log('%@.frame = %@'.fmt(this, SC.inspect(this.get('frame'))));
+    var topLeftView = this._topLeftView ,
+        bottomRightView = this._bottomRightView,
+        // the current thickness, not the original thickness
+        topLeftViewThickness = this.thicknessForView(topLeftView), 
+        bottomRightViewThickness = this.thicknessForView(bottomRightView),
+        minAvailable = this._dividerThickness ,
+        maxAvailable = 0,
+        proposedThickness = this._topLeftViewThickness + offset,
+        direction = this._layoutDirection,
+        bottomRightCanCollapse = this.canCollapseView(bottomRightView),
+        thickness = proposedThickness,
+        // constrain to thickness set on top/left
+        max = this.get('topLeftMaxThickness'),
+        min = this.get('topLeftMinThickness'),
+        bottomRightThickness, tlCollapseAtThickness, brCollapseAtThickness;
+    
+    if (!topLeftView.get("isCollapsed")) {
+      maxAvailable += topLeftViewThickness ;
+    }
+    if (!bottomRightView.get("isCollapsed")) {
+      maxAvailable += bottomRightViewThickness ;
+    }
+    
+    if (!SC.none(max)) thickness = Math.min(max, thickness) ;
+    if (!SC.none(min)) thickness = Math.max(min, thickness) ;
+    
+    // constrain to thickness set on bottom/right
+    max = this.get('bottomRightMaxThickness') ;
+    min = this.get('bottomRightMinThickness') ;
+    bottomRightThickness = maxAvailable - thickness ;
+    if (!SC.none(max)) {
+      bottomRightThickness = Math.min(max, bottomRightThickness) ;
+    }
+    if (!SC.none(min)) {
+      bottomRightThickness = Math.max(min, bottomRightThickness) ;
+    }
+    thickness = maxAvailable - bottomRightThickness ;
+    
+    // constrain to thickness determined by delegate.
+    thickness = this.invokeDelegateMethod(this.delegate, 
+      'splitViewConstrainThickness', this, topLeftView, thickness) ;
+    
+    // cannot be more than what's available
+    thickness = Math.min(thickness, maxAvailable) ;
+    
+    // cannot be less than zero
+    thickness = Math.max(0, thickness) ;
+    
+    tlCollapseAtThickness = topLeftView.get('collapseAtThickness') ;
+    if (!tlCollapseAtThickness) tlCollapseAtThickness = 0 ;
+    brCollapseAtThickness = bottomRightView.get('collapseAtThickness') ;
+    brCollapseAtThickness = SC.none(brCollapseAtThickness) ?
+                      maxAvailable : (maxAvailable - brCollapseAtThickness);
+    
+    if ((proposedThickness <= tlCollapseAtThickness) && 
+          this.canCollapseView(topLeftView)) {
+      // want to collapse top/left, check if this doesn't violate the max thickness of bottom/right
+      max = bottomRightView.get('maxThickness');
+      if (!max || (minAvailable + maxAvailable) <= max) {
+        // collapse top/left view, even if it has a minThickness
+        thickness = 0 ;
+      }
+    } else if (proposedThickness >= brCollapseAtThickness && 
+              this.canCollapseView(bottomRightView)) {
+      // want to collapse bottom/right, check if this doesn't violate the max thickness of top/left
+      max = topLeftView.get('maxThickness');
+      if (!max || (minAvailable + maxAvailable) <= max) {
+        // collapse bottom/right view, even if it has a minThickness
+        thickness = maxAvailable;
+      }
+    }
+    
+    // now apply constrained value
+    if (thickness != this.thicknessForView(topLeftView)) {
+      this._desiredTopLeftThickness = thickness ;
+      
+      // un-collapse if needed.
+      topLeftView.set('isCollapsed', thickness === 0) ;
+      bottomRightView.set('isCollapsed', thickness >= maxAvailable) ;
+      
+      this.updateChildLayout(); // updates child layouts
+      this.displayDidChange(); // updates cursor
+    }
+  },
+  
+  
+  _updateBottomRightThickness: function(offset) {
     var topLeftView = this._topLeftView ,
         bottomRightView = this._bottomRightView,
         topLeftViewThickness = this.thicknessForView(topLeftView), // the current thickness, not the original thickness
@@ -51437,8 +53034,6 @@ SC.SplitView = SC.View.extend(
       topLeftView.set('isCollapsed', thickness === 0) ;
       bottomRightView.set('isCollapsed', thickness >= maxAvailable) ;
       
-      // this.set('displayNeedsUpdate', YES);
-      // this.adjustLayout();
       this.updateChildLayout(); // updates child layouts
       this.displayDidChange(); // updates cursor
     }
@@ -51451,20 +53046,33 @@ SC.SplitView = SC.View.extend(
     @private 
   */
   _setCursorStyle: function() {
-    // console.log('%@._setCursorStyle()'.fmt(this));
-    var topLeftView = this._topLeftView ;
+    var topLeftView = this._topLeftView,
         bottomRightView = this._bottomRightView,
         thumbViewCursor = this.get('thumbViewCursor'),
-        // updates the cursor of the thumb view that called mouseDownInThumbView() to reflect the status of the drag
+        // updates the cursor of the thumb view that called 
+        // mouseDownInThumbView() to reflect the status of the drag
         tlThickness = this.thicknessForView(topLeftView),
         brThickness = this.thicknessForView(bottomRightView);
     this._layoutDirection = this.get('layoutDirection') ;
-    if (topLeftView.get('isCollapsed') || tlThickness === this.get("topLeftMinThickness") || brThickness == this.get("bottomRightMaxThickness")) {
-      thumbViewCursor.set('cursorStyle', this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "e-resize" : "s-resize") ;
-    } else if (bottomRightView.get('isCollapsed') || tlThickness === this.get("topLeftMaxThickness") || brThickness == this.get("bottomRightMinThickness")) {
-      thumbViewCursor.set('cursorStyle', this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "w-resize" : "n-resize") ;
+    if (topLeftView.get('isCollapsed') || 
+      tlThickness === this.get("topLeftMinThickness") || 
+      brThickness == this.get("bottomRightMaxThickness")) {
+      thumbViewCursor.set('cursorStyle', 
+        this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "e-resize" : "s-resize") ;
+    } else if (bottomRightView.get('isCollapsed') || 
+      tlThickness === this.get("topLeftMaxThickness") || 
+      brThickness == this.get("bottomRightMinThickness")) {
+      thumbViewCursor.set('cursorStyle', 
+        this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "w-resize" : "n-resize") ;
     } else {
-      thumbViewCursor.set('cursorStyle', this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "ew-resize" : "ns-resize") ;
+      if(SC.browser.msie) {
+        thumbViewCursor.set('cursorStyle', 
+          this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "e-resize" : "n-resize") ;
+      }
+      else {
+        thumbViewCursor.set('cursorStyle', 
+          this._layoutDirection === SC.LAYOUT_HORIZONTAL ? "ew-resize" : "ns-resize") ;
+      }
     }
   }.observes('layoutDirection'),
   
@@ -51480,7 +53088,6 @@ SC.SplitView = SC.View.extend(
     @returns {Boolean} YES to allow collapse.
   */
   splitViewCanCollapse: function(splitView, view) {
-    // console.log('%@.splitViewCanCollapse(%@, %@)'.fmt(this, splitView, view));
     if (splitView.get('canCollapseViews') === NO) return NO ;
     if (view.get('canCollapse') === NO) return NO ;
     return YES ;
@@ -51499,14 +53106,26 @@ SC.SplitView = SC.View.extend(
     @returns the allowed thickness
   */
   splitViewConstrainThickness: function(splitView, view, proposedThickness) {
-    // console.log('%@.splitViewConstrainThickness(%@, %@, %@)'.fmt(this, splitView, view, proposedThickness));
     return proposedThickness;
   },
   
   /* Force to rendering once the pane is attached */
   _forceSplitCalculation: function(){
     this.updateLayout(); 
-  }.observes('*pane.isPaneAttached')
+  }.observes('*pane.isPaneAttached'),
+
+  /**
+    This method is invoked on the split view when the view resizes due to a layout
+    change or due to the parent view resizing. It forces an update on topLeft and
+    bottomRight thickness.
+
+    @returns {void}
+  */
+  viewDidResize: function() {
+     arguments.callee.base.apply(this,arguments);
+     this.notifyPropertyChange('topLeftThickness')
+         .notifyPropertyChange('bottomRightThickness');
+   }.observes('layout')
 
 });
 
@@ -51655,7 +53274,10 @@ SC.TabView = SC.View.extend(
   // ..........................................................
   // PROPERTIES
   // 
-  
+
+ /** 
+    Set nowShowing with the page you want to display.
+  */
   nowShowing: null,
   
   items: [],
@@ -51725,19 +53347,17 @@ SC.TabView = SC.View.extend(
   },
   
   createChildViews: function() {
-    var childViews = [], view, ContainerView ;
+    var childViews = [], view, containerView, layout ;
     
-    if (this.get('tabLocation') === SC.TOP_LOCATION) {
-      ContainerView = this.containerView.extend({
-        layout: { top:12, left:0, right:0, bottom: 0 }
-      });
-    } else {
-      ContainerView = this.containerView.extend({
-        layout: { top:0, left:0, right:0, bottom: 12 }
-      });
-    }
+    layout = (this.get('tabLocation') === SC.TOP_LOCATION) ?
+             { top: 12, left: 0, right: 0, bottom: 0 } :
+             { top: 0, left: 0, right: 0, bottom: 12 } ;
     
-    view = this.containerView = this.createChildView(ContainerView) ;
+    containerView = this.containerView.extend({
+      layout: layout
+    });
+
+    view = this.containerView = this.createChildView(containerView) ;
     childViews.push(view);
     
     view = this.segmentedView = this.createChildView(this.segmentedView) ;
@@ -52084,50 +53704,50 @@ SC.WellView = SC.ContainerView.extend(
   }.observes('contentView')
   
 }) ;
-; tiki.script('sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore', {
   "packages": {
     "sproutcore/runtime": {
       "scripts": [
         {
-          "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-          "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+          "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+          "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
         }
       ]
     },
     "sproutcore/datastore": {
       "scripts": [
         {
-          "url": "/static/sproutcore/datastore/en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js",
-          "id": "sproutcore/datastore:en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js"
+          "url": "/static/sproutcore/datastore/en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js",
+          "id": "sproutcore/datastore:en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js"
         }
       ]
     },
     "sproutcore/foundation": {
       "stylesheets": [
         {
-          "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css",
-          "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css"
+          "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css",
+          "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css"
         }
       ],
       "scripts": [
         {
-          "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js",
-          "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js"
+          "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js",
+          "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js"
         }
       ]
     },
     "sproutcore/desktop": {
       "stylesheets": [
         {
-          "url": "/static/sproutcore/desktop/en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css",
-          "id": "sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css"
+          "url": "/static/sproutcore/desktop/en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css",
+          "id": "sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css"
         }
       ],
       "scripts": [
         {
-          "url": "/static/sproutcore/desktop/en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js",
-          "id": "sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js"
+          "url": "/static/sproutcore/desktop/en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js",
+          "id": "sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js"
         }
       ]
     },
@@ -52149,8 +53769,8 @@ SC.WellView = SC.ContainerView.extend(
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/en/dbd7a5e120cf0552319377c4d7a28a11c599b1d6/javascript.js",
-      "id": "sproutcore:en/dbd7a5e120cf0552319377c4d7a28a11c599b1d6/javascript.js"
+      "url": "/static/sproutcore/en/38a77176a1ba19e822801725ce96a7c78ad809b8/javascript.js",
+      "id": "sproutcore:en/38a77176a1ba19e822801725ce96a7c78ad809b8/javascript.js"
     }
   ]
 });
@@ -52205,14 +53825,14 @@ For more information about SproutCore, visit http://www.sproutcore.com
 ==========================================================================
 @license */
 ;});
-; tiki.script('sproutcore:en/dbd7a5e120cf0552319377c4d7a28a11c599b1d6/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore:en/38a77176a1ba19e822801725ce96a7c78ad809b8/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/animation', {
   "packages": {
     "sproutcore": {
       "scripts": [
         {
-          "url": "/static/sproutcore/en/dbd7a5e120cf0552319377c4d7a28a11c599b1d6/javascript.js",
-          "id": "sproutcore:en/dbd7a5e120cf0552319377c4d7a28a11c599b1d6/javascript.js"
+          "url": "/static/sproutcore/en/38a77176a1ba19e822801725ce96a7c78ad809b8/javascript.js",
+          "id": "sproutcore:en/38a77176a1ba19e822801725ce96a7c78ad809b8/javascript.js"
         }
       ]
     }
@@ -52222,8 +53842,8 @@ For more information about SproutCore, visit http://www.sproutcore.com
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/animation/en/2ba607ab369dda8bd146e581906ea3ce82dd2abb/javascript.js",
-      "id": "sproutcore/animation:en/2ba607ab369dda8bd146e581906ea3ce82dd2abb/javascript.js"
+      "url": "/static/sproutcore/animation/en/e88bac9dc7d0dabf706f4b845c32e0090984f5cb/javascript.js",
+      "id": "sproutcore/animation:en/e88bac9dc7d0dabf706f4b845c32e0090984f5cb/javascript.js"
     }
   ]
 });
@@ -52271,7 +53891,6 @@ SC.Animatable = {
   */
   isAnimatable: YES,
   
-  
   transitions: {},
   concatenatedProperties: ["transitions"],
 
@@ -52291,7 +53910,7 @@ SC.Animatable = {
 
   // properties that adjust should relay to style
   _styleProperties: [ "opacity", "display" ],
-  _layoutStyles: ["left", "right", "top", "bottom", "width", "height", "centerX", "centerY"],
+  _layoutStyles: 'width height top bottom marginLeft marginTop left right zIndex minWidth maxWidth minHeight maxHeight centerX centerY'.w(),
 
   // we cache this dictionary so we don't generate a new one each time we make
   // a new animation. It is used so we can start the animations in order—
@@ -52301,12 +53920,20 @@ SC.Animatable = {
   // and, said animation order
   _animationOrder: ["top", "left", "bottom", "right", "width", "height", "centerX", "centerY", "opacity", "display"],
 
+  _transitionCallbacks: {},
+
 
   initMixin: function()
   {
+    this._animatable_original_didCreateLayer = this.didCreateLayer || function(){};
+    this.didCreateLayer = this._animatable_didCreateLayer;
+
     // substitute our didUpdateLayer method (but saving the old one)
     this._animatable_original_did_update_layer = this.didUpdateLayer || function(){};
     this.didUpdateLayer = this._animatable_did_update_layer;
+
+    this._animatable_original_willDestroyLayer = this.willDestroyLayer || function(){};
+    this.willDestroyLayer = this._animatable_willDestroyLayer;
     
     this._animatable_original_willRemoveFromParent = this.willRemoveFromParent || function(){};
     this.willRemoveFromParent = this._animatable_will_remove_from_parent;
@@ -52341,6 +53968,18 @@ SC.Animatable = {
     this._animatableSetCSS = "";
     this._last_transition_css = ""; // to keep from re-setting unnecessarily
     this._disableAnimation = 0; // calls to disableAnimation add one; enableAnimation remove one.
+  },
+
+  _animatable_didCreateLayer: function(){
+    SC.Event.add(this.get('layer'), "webkitTransitionEnd", this, this.transitionEnd);
+    SC.Event.add(this.get('layer'), "transitionend", this, this.transitionEnd);
+    return this._animatable_original_didCreateLayer();
+  },
+
+  _animatable_willDestroyLayer: function(){
+    SC.Event.remove(this.get('layer'), "webkitTransitionEnd", this, this.transitionEnd);
+    SC.Event.remove(this.get('layer'), "transitionend", this, this.transitionEnd);
+    return this._animatable_original_willDestroyLayer();
   },
   
   /**
@@ -52423,7 +54062,16 @@ SC.Animatable = {
     // call base with whatever is leftover
     return this;
   },
-  
+
+
+  transitionEnd: function(evt){
+    var propertyName = evt.originalEvent.propertyName,
+        callback = this._transitionCallbacks[propertyName];
+
+    if(callback) SC.Animatable.runCallback(callback);
+  },
+
+
   /**
   Returns the current set of styles and layout according to JavaScript transitions.
   
@@ -52434,7 +54082,7 @@ SC.Animatable = {
   It will return null if there is no such style.
   */
   getCurrentJavaScriptStyles: function() {
-    return this._animatableCurrentStyle
+    return this._animatableCurrentStyle;
   },
 
   /**
@@ -52469,7 +54117,7 @@ SC.Animatable = {
     // get our frame and parent's frame
     this.notifyPropertyChange("layout");
     var f = this.get("frame");
-    var p = this.getPath("layoutView.frame");
+    var p = this.computeParentDimensions();
 
     // set back to target
     this.layout = original_layout;
@@ -52609,6 +54257,15 @@ SC.Animatable = {
         // the transition is already set up.
         // we can just set it as part of the starting point
         startingPoint[i] = newStyle[i];
+
+        if (this.transitions[i].action){
+          this._transitionCallbacks[i] = {
+            source: this,
+            target: (this.transitions[i].target || this),
+            action: this.transitions[i].action
+          };
+        }
+
         continue;
       }
 
@@ -52656,6 +54313,14 @@ SC.Animatable = {
       a.action = applier;
       a.style = layer.style;
       a.holder = this;
+
+      if (this.transitions[i].action){
+        a.callback = {
+          source: this,
+          target: (this.transitions[i].target || this),
+          action: this.transitions[i].action
+        };
+      }
 
       timing = this.transitions[i].timing || SC.Animatable.defaultTimingFunction;
       if (timing && SC.typeOf(timing) != SC.T_STRING) a.timingFunction = timing;
@@ -52920,6 +54585,7 @@ SC.Animatable = {
     if (t < e) SC.Animatable.addTimer(this);
     else {
       this.going = false;
+      if(this.callback) SC.Animatable.runCallback(this.callback);
       this.styles = null;
       this.layer = null;
     }
@@ -52947,6 +54613,7 @@ SC.Animatable = {
     this.style[this.property] = this.endValue;
 
     this.going = false;
+    if(this.callback) SC.Animatable.runCallback(this.callback);
     this.styles = null;
     this.layer = null;
   },
@@ -52997,6 +54664,7 @@ SC.Animatable = {
     if (t < e) SC.Animatable.addTimer(this);
     else {
       this.going = false;
+      if(this.callback) SC.Animatable.runCallback(this.callback);
       this.styles = null;
       this.layer = null;
     }
@@ -53039,18 +54707,19 @@ SC.Animatable = {
     var widthOrHeight, style;
     if (this.property == "centerX")
     {
-      widthOrHeight = "width"; style = "margin-left";
+      widthOrHeight = "width"; style = "marginLeft";
     }
     else
     {
-      widthOrHeight = "height"; style = "margin-top";
+      widthOrHeight = "height"; style = "marginTop";
     }
 
     this.style[style] = Math.round(value - (this.holder._animatableCurrentStyle[widthOrHeight] / 2)) + "px";
-
+    
     if (t < e) SC.Animatable.addTimer(this);
     else {
       this.going = false;
+      if(this.callback) SC.Animatable.runCallback(this.callback);
       this.styles = null;
       this.layer = null;
     }
@@ -53175,7 +54844,38 @@ SC.mixin(SC.Animatable, {
       SC.Animatable.stats.set("lastFPS", SC.Animatable._ticks / (time_diff / 1000));
       loop.end();
     }
+  },
+
+  runCallback: function(callback){
+    var typeOfAction = SC.typeOf(callback.action);
+
+    // if the action is a function, just try to call it.
+    if (typeOfAction == SC.T_FUNCTION) {
+      callback.action.call(callback.target);
+
+    // otherwise, action should be a string.  If it has a period, treat it
+    // like a property path.
+    } else if (typeOfAction === SC.T_STRING) {
+      if (callback.action.indexOf('.') >= 0) {
+        var path = callback.action.split('.') ;
+        var property = path.pop() ;
+
+        var target = SC.objectForPropertyPath(path, window) ;
+        var action = target.get ? target.get(property) : target[property];
+        if (action && SC.typeOf(action) == SC.T_FUNCTION) {
+          action.call(target);
+        } else {
+          throw 'SC.Animator could not find a function at %@'.fmt(callback.action) ;
+        }
+
+      // otherwise, try to execute action direction on target or send down
+      // responder chain.
+      } else {
+        SC.RootResponder.responder.sendAction(callback.action, callback.target);
+      }
+    }
   }
+
 });
 
 
@@ -53214,20 +54914,20 @@ Test for CSS transition capability...
   // and apply what we found
   if (testResult) SC.Animatable.enableCSSTransitions = true;
 })();
-; tiki.script('sproutcore/animation:en/2ba607ab369dda8bd146e581906ea3ce82dd2abb/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/animation:en/e88bac9dc7d0dabf706f4b845c32e0090984f5cb/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/core_tools', {
   "packages": {
     "sproutcore/desktop": {
       "stylesheets": [
         {
-          "url": "/static/sproutcore/desktop/en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css",
-          "id": "sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/stylesheet.css"
+          "url": "/static/sproutcore/desktop/en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css",
+          "id": "sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/stylesheet.css"
         }
       ],
       "scripts": [
         {
-          "url": "/static/sproutcore/desktop/en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js",
-          "id": "sproutcore/desktop:en/d04d0e999d88aafd88674367b08329da31eac5ab/javascript.js"
+          "url": "/static/sproutcore/desktop/en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js",
+          "id": "sproutcore/desktop:en/a130a04e21382c6564992d11ba7de6cd3635b4ba/javascript.js"
         }
       ]
     }
@@ -53237,14 +54937,14 @@ Test for CSS transition capability...
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/core_tools/en/43e301133b1f9cc0f187e8d5477638314d2427c5/javascript.js",
-      "id": "sproutcore/core_tools:en/43e301133b1f9cc0f187e8d5477638314d2427c5/javascript.js"
+      "url": "/static/sproutcore/core_tools/en/799effc45a5a067fe184a46825c4213102459d66/javascript.js",
+      "id": "sproutcore/core_tools:en/799effc45a5a067fe184a46825c4213102459d66/javascript.js"
     }
   ]
 });
 tiki.global('sproutcore/core_tools');
 
-; tiki.script('sproutcore/core_tools:en/43e301133b1f9cc0f187e8d5477638314d2427c5/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/core_tools:en/799effc45a5a067fe184a46825c4213102459d66/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/datejs', {
   "scripts": [
     {
@@ -53627,30 +55327,30 @@ SC.addInvokeOnceLastDebuggingInfo = function() {
     "sproutcore/runtime": {
       "scripts": [
         {
-          "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-          "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+          "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+          "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
         }
       ]
     },
     "sproutcore/foundation": {
       "stylesheets": [
         {
-          "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css",
-          "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/stylesheet.css"
+          "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css",
+          "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/stylesheet.css"
         }
       ],
       "scripts": [
         {
-          "url": "/static/sproutcore/foundation/en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js",
-          "id": "sproutcore/foundation:en/08011d4c986534c14a166d04e7c3aead93e9ceae/javascript.js"
+          "url": "/static/sproutcore/foundation/en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js",
+          "id": "sproutcore/foundation:en/3bfaa54e342a11ea46fb06655b8fb1351c2ad19f/javascript.js"
         }
       ]
     }
   },
   "stylesheets": [
     {
-      "url": "/static/sproutcore/designer/en/c31f4a999b308340c034ef4ae90087615be810b2/stylesheet.css",
-      "id": "sproutcore/designer:en/c31f4a999b308340c034ef4ae90087615be810b2/stylesheet.css"
+      "url": "/static/sproutcore/designer/en/1f37990cd851db9a2ee5c44d115f110d9ee2d4aa/stylesheet.css",
+      "id": "sproutcore/designer:en/1f37990cd851db9a2ee5c44d115f110d9ee2d4aa/stylesheet.css"
     }
   ],
   "depends": [
@@ -53659,14 +55359,14 @@ SC.addInvokeOnceLastDebuggingInfo = function() {
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/designer/en/c31f4a999b308340c034ef4ae90087615be810b2/javascript.js",
-      "id": "sproutcore/designer:en/c31f4a999b308340c034ef4ae90087615be810b2/javascript.js"
+      "url": "/static/sproutcore/designer/en/1f37990cd851db9a2ee5c44d115f110d9ee2d4aa/javascript.js",
+      "id": "sproutcore/designer:en/1f37990cd851db9a2ee5c44d115f110d9ee2d4aa/javascript.js"
     }
   ]
 });
 tiki.global('sproutcore/designer');
 
-; tiki.script('sproutcore/designer:en/c31f4a999b308340c034ef4ae90087615be810b2/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/designer:en/1f37990cd851db9a2ee5c44d115f110d9ee2d4aa/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/empty_theme', {
   "scripts": [
     {
@@ -53687,16 +55387,16 @@ var m;
     "sproutcore/runtime": {
       "scripts": [
         {
-          "url": "/static/sproutcore/runtime/en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js",
-          "id": "sproutcore/runtime:en/15e447c5c26c99b3ab764060e903e7e13fcea42b/javascript.js"
+          "url": "/static/sproutcore/runtime/en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js",
+          "id": "sproutcore/runtime:en/34ff3816b07f9f4cb5fb6b5e5ce2f15b5362e711/javascript.js"
         }
       ]
     },
     "sproutcore/datastore": {
       "scripts": [
         {
-          "url": "/static/sproutcore/datastore/en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js",
-          "id": "sproutcore/datastore:en/13640fbbf9b7306554106c0144025d970a92b30d/javascript.js"
+          "url": "/static/sproutcore/datastore/en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js",
+          "id": "sproutcore/datastore:en/24fcfdc3a4d561b8c1fe714e5331b2f2fda8e205/javascript.js"
         }
       ]
     }
@@ -53707,14 +55407,14 @@ var m;
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/mini/en/860d2cb132bc57cdeaf48df9016f2f9de33c5698/javascript.js",
-      "id": "sproutcore/mini:en/860d2cb132bc57cdeaf48df9016f2f9de33c5698/javascript.js"
+      "url": "/static/sproutcore/mini/en/9389bf26f984d09b0acc435ff44c5460265d3e04/javascript.js",
+      "id": "sproutcore/mini:en/9389bf26f984d09b0acc435ff44c5460265d3e04/javascript.js"
     }
   ]
 });
 tiki.global('sproutcore/mini');
 
-; tiki.script('sproutcore/mini:en/860d2cb132bc57cdeaf48df9016f2f9de33c5698/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/mini:en/9389bf26f984d09b0acc435ff44c5460265d3e04/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/standard_theme', {
   "packages": {
     "sproutcore/empty_theme": {
@@ -53728,8 +55428,8 @@ tiki.global('sproutcore/mini');
   },
   "stylesheets": [
     {
-      "url": "/static/sproutcore/standard_theme/en/a56ea1a2b3ce510f45a5406d71a926f32602d18e/stylesheet.css",
-      "id": "sproutcore/standard_theme:en/a56ea1a2b3ce510f45a5406d71a926f32602d18e/stylesheet.css"
+      "url": "/static/sproutcore/standard_theme/en/77378d526943ec81407cd7fc4d1ebdcc0eda3df4/stylesheet.css",
+      "id": "sproutcore/standard_theme:en/77378d526943ec81407cd7fc4d1ebdcc0eda3df4/stylesheet.css"
     }
   ],
   "depends": [
@@ -53737,8 +55437,8 @@ tiki.global('sproutcore/mini');
   ],
   "scripts": [
     {
-      "url": "/static/sproutcore/standard_theme/en/a56ea1a2b3ce510f45a5406d71a926f32602d18e/javascript.js",
-      "id": "sproutcore/standard_theme:en/a56ea1a2b3ce510f45a5406d71a926f32602d18e/javascript.js"
+      "url": "/static/sproutcore/standard_theme/en/77378d526943ec81407cd7fc4d1ebdcc0eda3df4/javascript.js",
+      "id": "sproutcore/standard_theme:en/77378d526943ec81407cd7fc4d1ebdcc0eda3df4/javascript.js"
     }
   ]
 });
@@ -53748,7 +55448,1217 @@ tiki.module('sproutcore/standard_theme:index', function(require, exports, module
 var m;
 });
 
-; tiki.script('sproutcore/standard_theme:en/a56ea1a2b3ce510f45a5406d71a926f32602d18e/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+; tiki.script('sproutcore/standard_theme:en/77378d526943ec81407cd7fc4d1ebdcc0eda3df4/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
+;tiki.register('sproutcore/table', {
+  "scripts": [
+    {
+      "url": "/static/sproutcore/table/en/be046b5f5056631186d76179a5f993fcee379c31/javascript.js",
+      "id": "sproutcore/table:en/be046b5f5056631186d76179a5f993fcee379c31/javascript.js"
+    }
+  ]
+});
+
+/* >>>>>>>>>> BEGIN source/mixins/table_delegate.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+/**
+  A delegate for table resize operations.
+*/
+SC.TableDelegate = {
+  /**
+    Walk like a duck.
+  */
+  isTableDelegate: YES,
+  
+  /**
+    Called just before a table resizes a column to a proposed width.  You
+    can use this method to constrain the allowed width.  The default 
+    implementation uses the minWidth and maxWidth of the column object.
+  */
+  tableShouldResizeColumnTo: function(table, column, proposedWidth) {
+    var min = column.get('minWidth') || 0,
+        max = column.get('maxWidth') || proposedWidth;
+    
+    proposedWidth = Math.max(min, proposedWidth);
+    proposedWidth = Math.min(max, proposedWidth);
+    
+    return proposedWidth;
+  },
+  
+  tableShouldResizeWidthTo: function(table, proposedWidth) {
+    var min = table.get('minWidth') || 0,
+        max = table.get('maxWidth') || proposedWidth;
+        
+    proposedWidth = Math.max(min, proposedWidth);
+    proposedWidth = Math.min(max, proposedWidth);
+    
+    return proposedWidth;
+  }
+};
+
+/* >>>>>>>>>> BEGIN source/system/table_column.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+
+SC.SORT_ASCENDING  = 'ascending';
+SC.SORT_DESCENDING = 'descending';
+
+/** @class
+
+  An abstract object that manages the state of the columns behind a
+  `SC.TableView`.
+  
+  @extends SC.Object
+  @since SproutCore 1.1
+*/
+
+SC.TableColumn = SC.Object.extend({
+/** @scope SC.TableColumn.prototype */
+  
+  /**
+    The internal name of the column. `SC.TableRowView` objects expect their
+    `content` to be an object with keys corresponding to the column's keys.
+    
+    @property
+    @type String
+  */
+  key: null,
+  
+  /**
+    The display name of the column. Will appear in the table header for this
+    column.
+    
+    @property
+    @type String
+  */
+  title: null,
+  
+  /**
+    Width of the column.
+    
+    @property
+    @type Number
+  */
+  width: 100,
+  
+  /**
+    How narrow the column will allow itself to be.
+    
+    @property
+    @type Number
+  */
+  minWidth: 16,
+  
+  /**
+    How wide the column will allow itself to be.
+    
+    @property
+    @type Number
+  */
+  maxWidth: 700,
+  
+  escapeHTML: NO,
+
+  formatter: null,
+
+  
+  isVisible: YES,
+  
+  /**
+    Whether the column gets wider or narrower based on the size of the
+    table. Only one column in a TableView is allowed to be flexible.
+    
+    @property
+    @type Boolean
+  */
+  isFlexible: NO,
+  
+  /**
+    Whether the column can be drag-reordered.
+    
+    @property
+    @type Boolean
+  */
+  isReorderable: YES,
+  
+  /**
+    Whether the column can be sorted.
+    
+    @property
+    @type Boolean
+  */
+  isSortable: YES,
+
+  /**
+    Reference to the URL for this column's icon. If `null`, there is no
+    icon associated with the column.
+    @property
+  */
+  icon: null,
+  
+  tableHeader: null,
+
+  /**
+    The sort state of this particular column. Can be one of
+    SC.SORT_ASCENDING, SC.SORT_DESCENDING, or `null`. For instance, if
+    SC.SORT_ASCENDING, means that the table is being sorted on this column
+    in the ascending direction. If `null`, means that the table is sorted
+    on another column.
+    
+    @property
+  */
+  sortState: null,
+  
+  /**
+    The content property of the controlling SC.TableView. This is needed
+    because the SC.TableHeader views use this class to find out how to
+    render table content (when necessary).
+  */
+  tableContent: null
+  
+});
+
+/* >>>>>>>>>> BEGIN source/views/table_row.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+sc_require('views/list');
+
+/** @class
+  
+  The default example view for a table row. Belongs to a SC.TableView.
+
+  @extends SC.View
+  @since SproutCore 1.1
+*/
+
+SC.TableRowView = SC.View.extend({
+/** @scope SC.TableRowView.prototype */ 
+
+  //layout: { height: 18, left: 0, right: 0, top: 0 },
+  
+  // ..........................................................
+  // PROPERTIES
+  //
+  
+  classNames: ['sc-table-row'],
+  
+  cells: [],
+
+  acceptsFirstResponder: YES,
+  
+  /**
+    A reference to the row's encompassing TableView.
+    
+    @property
+    @type SC.TableView
+  */
+  tableView: null,
+  
+  // ..........................................................
+  // METHODS
+  // 
+  
+  init: function() {
+    // TODO: Figure out why the `columns` observer doesn't work
+    this._sctrv_handleChildren();
+  },
+  
+  /**
+    A collection of `SC.TableColumn` objects.
+    
+    @property
+    @type Array
+  */
+  columns: function() {
+    return this.get('tableView').get('columns');
+  }.property(),
+  
+  prepareContext: function(context, firstTime) {
+    arguments.callee.base.apply(this,arguments);
+    context.setClass('sel', this.get('isSelected'));
+  },
+
+  renderChildViews: function(context, firstTime) {
+    var cells = this.get('cells'), cell, idx;
+    for (idx = 0; idx < cells.get('length'); idx++) {
+      cell = cells.objectAt(idx);
+      context = context.begin(cell.get('tagName'));
+      cell.prepareContext(context, firstTime);
+      context = context.end();
+    }
+    return context;
+  },
+  
+  layoutChildViews: function() {
+    var cells = this.get('cells'), columns = this.get('columns'),
+        cell, column, idx;
+    var left = 0, width, rowHeight = this.get('tableView').get('rowHeight');
+    
+    for (idx = 0; idx < cells.get('length'); idx++) {
+      cell = cells.objectAt(idx);
+      column = columns.objectAt(idx);
+      width = column.get('width');
+      
+      cell.adjust({
+        left: left,
+        width: width,
+        height: rowHeight
+      });
+      
+      left += width;
+      cell.updateLayout();
+    }
+  },
+  
+  // ..........................................................
+  // INTERNAL SUPPORT
+  // 
+  
+  _sctrv_layoutForChildAtColumnIndex: function(index) {
+    var columns = this.get('columns'),
+        rowHeight = this.get('tableView').get('rowHeight'),
+        layout = {},
+        left = 0, idx;
+        
+    for (idx = 0; idx < index; idx++) {
+      left += columns.objectAt(idx).get('width');
+    }
+    
+    return {
+      left:   left,
+      width:  columns.objectAt(index).get('width'),
+      height: rowHeight
+    };
+  },  
+  
+  _sctrv_createTableCell: function(column, value) {
+    var cell = SC.TableCellView.create({
+      column:  column,
+      content: value
+    });
+    return cell;
+  },
+  
+  // The row needs to redraw when the selection state changes.
+  _sctrv_handleSelection: function() {
+    this.displayDidChange();
+  }.observes('isSelected'),
+  
+  _sctrv_handleChildren: function() {
+    var content = this.get('content'), columns = this.get('columns');
+    
+    this.removeAllChildren();
+    var column, key, value, cells = [], cell, idx;
+    for (idx = 0; idx < columns.get('length'); idx++) {
+      column = columns.objectAt(idx);
+      key    = column.get('key');
+      value  = content ? content.getPath(key) : "";
+      cell   = this._sctrv_createTableCell(column, value);
+      cells.push(cell);
+      this.appendChild(cell);
+    }
+    
+    this.set('cells', cells);
+  }
+});
+
+
+/* >>>>>>>>>> BEGIN source/views/table_header.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+sc_require('views/table');
+
+/** @class
+  The views that make up the column header cells in a typical `SC.TableView`.
+  
+  In addition, this view is in charge of rendering the _entire_ table column
+  (both header and body) when the table is in the "drag-reorder" state. This
+  is the state that occurs when the user clicks and holds on a table header,
+  then drags that header horizontally.
+
+  @extends SC.View
+  @since SproutCore 1.1
+*/
+SC.TableHeaderView = SC.View.extend({
+  
+  classNames: ['sc-table-header'],
+  
+  displayProperties: ['sortState', 'isInDragMode'],
+  
+  acceptsFirstResponder: YES,
+  
+  isInDragMode: NO,
+  
+  hasHorizontalScroller: NO,
+  hasVerticalScroller: NO,
+  
+  childViews: ['dragModeView'],
+  
+  
+  /**
+    The view that is visible when the column is in drag mode.
+  */
+  dragModeView: SC.ListView.design({
+    isVisible: NO,
+    
+    layout: { left: 0, right: 0, bottom: 0 },
+    
+    init: function() {
+      var tableHeaderView = this.get('parentView');
+      
+      if (tableHeaderView) {
+        tableHeaderView.addObserver('isInDragMode', this,
+            '_scthv_dragModeDidChange');
+      }
+      
+    },
+    
+    _scthv_dragModeDidChange: function() {
+      // var isInDragMode = this.get('tableHeaderView').get('isInDragMode');
+      // this.set('isVisible', isInDragMode);
+    }
+  }),
+
+  /**
+    The SC.TableColumn object this header cell is bound to.
+  */
+  column:  null,
+  
+  render: function(context, firstTime) {
+    var column = this.get('column'), icon = column.get('icon'), html;
+    var span = context.begin('span');
+    if (icon) {
+      html = '<img src="%@" class="icon" />'.fmt(icon);
+      span.push(html);
+    } else {
+      span.push(this.get('label'));
+    }
+    span.end();
+  },
+    
+  // ========================================================
+  // = For the column we look after, set up some observers. =
+  // ========================================================
+  init: function() {
+    var column = this.get('column');
+    column.addObserver('width',     this, '_scthv_layoutDidChange');
+    column.addObserver('maxWidth',  this, '_scthv_layoutDidChange');
+    column.addObserver('minWidth',  this, '_scthv_layoutDidChange');
+    column.addObserver('sortState', this, '_scthv_sortStateDidChange');
+    column.addObserver('tableContent', this, '_scthv_tableContentDidChange');
+    
+    // var tableContent = column.get('tableContent');
+    // var columnContent = this._scthv_columnContentFromTableContent(tableContent);
+    // this.set('content', columnContent);
+    
+    return arguments.callee.base.apply(this,arguments);
+  },
+  
+  /**
+    The sortState of the header view's column.
+  */
+  sortState: function() {
+    return this.get('column').get('sortState');
+  }.property(),
+  
+  mouseDown: function(evt) {
+    var tableView = this.get('tableView');    
+    return tableView ? tableView.mouseDownInTableHeaderView(evt, this) :
+     arguments.callee.base.apply(this,arguments);
+  },
+  
+  mouseUp: function(evt) {
+    var tableView = this.get('tableView');
+    return tableView ? tableView.mouseUpInTableHeaderView(evt, this) :
+     arguments.callee.base.apply(this,arguments);
+  },
+  
+  mouseDragged: function(evt) {
+    var tableView = this.get('tableView');
+    return tableView ? tableView.mouseDraggedInTableHeaderView(evt, this) :
+     arguments.callee.base.apply(this,arguments);
+  },
+  
+  _scthv_dragViewForHeader: function() {
+    var dragLayer = this.get('layer').cloneNode(true);
+    var view = SC.View.create({ layer: dragLayer, parentView: this });
+    
+    // cleanup weird stuff that might make the drag look out of place
+    SC.$(dragLayer).css('backgroundColor', 'transparent')
+      .css('border', 'none')
+      .css('top', 0).css('left', 0);      
+    
+    return view;
+  },
+  
+  _scthv_enterDragMode: function() {
+    this.set('isInDragMode', YES);
+  },
+  
+  _scthv_exitDragMode: function() {
+    this.set('isInDragMode', NO);
+  },
+  
+  // _scthv_hideViewInDragMode: function() {    
+  //   var shouldBeVisible = !this.get('isInDragMode'), layer = this.get('layer');
+  //   console.log('should be visible: %@'.fmt(!this.get('isInDragMode')));
+  //   SC.RunLoop.begin();
+  //   SC.$(layer).css('display', shouldBeVisible ? 'block' : 'none');
+  //   SC.RunLoop.end();
+  // }.observes('isInDragMode'),
+  
+  // _scthv_setupDragMode: function() {
+  //   var isInDragMode = this.get('isInDragMode');
+  //   if (isInDragMode) {
+  //     });      
+  //   } else {
+  //     //
+  //   }
+  //   
+  //   
+  // }.observes('isInDragMode'),
+  
+  _scthv_dragModeViewDidChange: function() {
+    var dragModeView = this.get('dragModeView');
+    if (dragModeView && dragModeView.set) {
+      dragModeView.set('tableHeadView', this);
+      dragModeView.set('tableView', this.get('tableView'));
+    }
+  }.observes('dragModeView'),
+  
+  _scthv_layoutDidChange: function(sender, key, value, rev) {
+    var pv = this.get('parentView');
+    pv.invokeOnce(pv.layoutChildViews);
+    
+    // Tell the container view how tall the header is so that it can adjust
+    // itself accordingly.
+    var layout = this.get('layout');    
+    //this.get('dragModeView').adjust('top', layout.height);
+  },
+  
+  // When our column's tableContent property changes, we need to go back and get our column content
+  _scthv_tableContentDidChange: function() {
+    var tableContent = this.get('column').get('tableContent');    
+    var columnContent = this.get('parentView')._scthv_columnContentFromTableContent(tableContent, this.get('columnIndex'));
+    this.set('content', columnContent);
+  },
+  
+  _scthv_sortStateDidChange: function() {
+    SC.RunLoop.begin();
+    var sortState  = this.get('column').get('sortState');
+    var classNames = this.get('classNames');
+    
+    classNames.removeObject('sc-table-header-sort-asc');
+    classNames.removeObject('sc-table-header-sort-desc');
+    classNames.removeObject('sc-table-header-sort-active');
+    
+    if (sortState !== null) {
+      classNames.push('sc-table-header-sort-active');
+    }
+    
+    if (sortState === SC.SORT_ASCENDING) {
+      classNames.push('sc-table-header-sort-asc');
+    }
+    
+    if (sortState === SC.SORT_DESCENDING) {
+      classNames.push('sc-table-header-sort-desc');
+    }
+    
+    // TODO: Figure out why it's not enough to simply call
+    // `displayDidChange` here.
+    this.displayDidChange();
+    this.invokeOnce('updateLayer');
+    SC.RunLoop.end();
+  }
+});
+/* >>>>>>>>>> BEGIN source/views/table_head.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+sc_require('views/table');
+sc_require('views/table_header');
+
+/** @class
+
+  The head of a `SC.TableView`. It's a special row of the table that holds
+  the column header cells.
+  
+  @extends SC.View
+  @since SproutCore 1.1
+*/
+SC.TableHeadView = SC.View.extend({  
+/** @scope SC.TableHeadView.prototype */
+  
+  layout: { height: 18, left: 0, right: 0, top: 0 },
+
+  classNames: ['sc-table-head'],
+
+  cells: [],
+  
+  acceptsFirstResponder: YES,
+
+  dragOrder: null,
+  
+  init: function() {
+    // TODO: Figure out why the `columns` observer doesn't work
+    this._scthv_handleChildren();
+  },
+    
+  columns: function() {
+    return this.get('parentView').get('columns');
+  }.property(),  
+  
+  renderChildViews: function(context, firstTime) {
+    var cells = this.get('cells'), cell, idx;
+    for (idx = 0; idx < cells.get('length'); idx++) {
+      cell = cells.objectAt(idx);
+      context = context.begin(cell.get('tagName'));
+      cell.prepareContext(context, firstTime);
+      context = context.end();
+    }
+    return context;
+  },
+  
+  layoutChildViews: function() {
+    var cells = this.get('cells'), cell, idx;
+    for (idx = 0; idx < cells.get('length'); idx++) {
+      cell = cells.objectAt(idx);
+      cell.adjust(this._scthv_layoutForHeaderAtColumnIndex(idx));
+      cell.updateLayout();
+    }
+  },
+
+  
+  // ..........................................................
+  // INTERNAL SUPPORT
+  //
+  
+  _scthv_enterDragMode: function() {
+    var order = [], columns = this.get('columns'), idx;
+    
+    for (idx = 0; idx < columns.get('length'); idx++) {
+      order.push(columns.objectAt(idx).get('key'));
+    }
+    
+    this.set('dragOrder', order);
+  },
+  
+  _scthv_changeDragOrder: function(draggedColumnIndex, leftOfIndex) {
+    var dragOrder = this.get('dragOrder'),
+     draggedColumn = dragOrder.objectAt(draggedColumnIndex);
+    
+    dragOrder.removeAt(idx);
+    dragOrder.insertAt(leftOfIndex, draggedColumn);
+  },
+  
+  _scthv_reorderDragColumnViews: function() {
+    
+  }.observes('dragOrder'),
+  
+  
+  _scthv_columnContentFromTableContent: function(tableContent, columnIndex) {
+    var column = this.get('columns').objectAt(columnIndex),
+        key = column.get('key'),
+        ret = [],
+        idx;
+        
+    if (!tableContent) return ret;
+        
+    var tableView = this.get('parentView'),
+        length = tableContent.get('length');
+        // visibleIndexes = tableView.contentIndexesInRect(
+        //     tableView.get('frame')).toArray();
+            
+    for (idx = 0; idx < length; idx++) {
+      //visibleIndex = visibleIndexes.objectAt(idx);
+      ret.push(tableContent.objectAt(idx).get(key));
+    }
+    
+    return ret;
+  },
+  
+  _scthv_layoutForHeaderAtColumnIndex: function(index) {
+    var columns = this.get('columns'),
+        rowHeight = this.get('parentView').get('rowHeight'),
+        layout = {},
+        left = 0, idx;
+        
+    for (idx = 0; idx < index; idx++) {
+      left += columns.objectAt(idx).get('width');
+    }
+    
+    return {
+      left:   left,
+      width:  columns.objectAt(index).get('width'),
+      height: rowHeight
+    };
+  },
+  
+  _scthv_handleChildren: function() {
+    var columns = this.get('columns');
+    var tableView = this.get('parentView');
+    var tableContent = tableView.get('content');
+    
+    var column, key, label, content, cells = [], cell, idx;
+    for (idx = 0; idx < columns.get('length'); idx++) {
+      column = columns.objectAt(idx);
+      key    = column.get('key');
+      label  = column.get('label');
+      content = this._scthv_columnContentFromTableContent(tableContent, idx);
+      cell   = this._scthv_createTableHeader(column, label, content, idx);
+      cells.push(cell);
+    }
+    this.set('cells', cells);
+    if (cells.length > 0)
+      this.replaceAllChildren(cells);
+  },
+  
+  _scthv_createTableHeader: function(column, label, content, idx) {
+    var tableView = this.get('parentView');
+    var cell = SC.TableHeaderView.create({
+      column:  column,
+      label: label,
+      content: content,
+      tableView: tableView,
+      columnIndex: idx
+    });
+    return cell;
+  }
+});
+
+
+/* >>>>>>>>>> BEGIN source/views/table.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+sc_require('views/list');
+sc_require('views/table_row');
+sc_require('views/table_head');
+sc_require('mixins/table_delegate');
+
+/** @class
+  
+  A table view renders a two-dimensional grid of data.
+  
+  TODO: More documentation.
+  
+  @extends SC.ListView
+  @extends SC.TableDelegate
+  @since SproutCore 1.1
+*/
+
+SC.TableView = SC.ListView.extend(SC.TableDelegate, {
+  /** @scope SC.TableView.prototype */  
+  
+  // ..........................................................
+  // PROPERTIES
+  // 
+  
+  classNames: ['sc-table-view'],
+  
+  childViews: "tableHeadView scrollView".w(),
+  
+  scrollView: SC.ScrollView.design({
+    isVisible: YES,
+    layout: {
+      left:   -1,
+      right:  0,
+      bottom: 0,
+      top:    19
+    },
+    hasHorizontalScroller: NO,
+    borderStyle: SC.BORDER_NONE,
+    contentView: SC.View.design({
+    }),
+    
+    // FIXME: Hack.
+    _sv_offsetDidChange: function() {
+      this.get('parentView')._sctv_scrollOffsetDidChange();
+    }.observes('verticalScrollOffset', 'horizontalScrollOffset')
+  }),
+
+  hasHorizontalScroller: NO,
+  hasVerticalScroller: NO,
+  
+  selectOnMouseDown: NO,
+  
+  // FIXME: Charles originally had this as an outlet, but that doesn't work.
+  // Figure out why.
+  containerView: function() {
+    var scrollView = this.get('scrollView');
+    return (scrollView && scrollView.get) ? scrollView.get('contentView') : null;
+    //return this.get('scrollView').get('contentView');
+  }.property('scrollView'),
+  
+  layout: { left: 0, right: 0, top: 0, bottom: 0 },
+  
+  init: function() {
+    window.table = this; // DEBUG
+    //this._sctv_columnsDidChange();
+    return arguments.callee.base.apply(this,arguments);
+  },
+  
+  
+  canReorderContent: NO,
+  
+  isInDragMode: NO,
+  
+  // ..........................................................
+  // EVENT RESPONDERS
+  // 
+  
+  mouseDownInTableHeaderView: function(evt, header) {
+    var column = header.get('column');
+    
+    if (!column.get('isReorderable') && !column.get('isSortable')) {
+      return NO;
+    }
+    
+    // Save the mouseDown event so we can use it for mouseUp/mouseDragged.
+    this._mouseDownEvent = evt;
+    // Set the timer for switching from a sort action to a reorder action.
+    this._mouseDownTimer = SC.Timer.schedule({
+      target: this,
+      action: '_scthv_enterDragMode',
+      interval: 300
+    });
+    
+    return YES;
+  },
+  
+  mouseUpInTableHeaderView: function(evt, header) {
+    var isInDragMode = this.get('isInDragMode');
+    // Only sort if we're not in drag mode (i.e., short clicks).
+    if (!isInDragMode) {
+      var column = header.get('column');
+      // Change the sort state of the associated column.
+      this.set('sortedColumn', column);
+
+      var sortState = column.get('sortState');
+      var newSortState = sortState === SC.SORT_ASCENDING ?
+       SC.SORT_DESCENDING : SC.SORT_ASCENDING;
+
+      column.set('sortState', newSortState);
+    }
+    
+    // Exit drag mode (and cancel any scheduled drag modes).
+    // this._scthv_exitDragMode();
+    this._dragging = false;
+    if (this._mouseDownTimer) {
+      this._mouseDownTimer.invalidate();
+    }
+    
+  },
+  
+  mouseDraggedInTableHeaderView: function(evt, header) {
+    SC.RunLoop.begin();
+    var isInDragMode = this.get('isInDragMode');
+    if (!isInDragMode) return NO;
+    
+    if (!this._dragging) {
+      SC.Drag.start({
+        event:  this._mouseDownEvent,
+        source: header,
+        dragView: this._scthv_dragViewForHeader(),
+        ghost: YES
+        //anchorView: this.get('parentView')
+      });
+      this._dragging = true;
+    }
+    
+    return arguments.callee.base.apply(this,arguments);
+    SC.RunLoop.end();
+  },
+  
+  
+  // ..........................................................
+  // COLUMN PROPERTIES
+  //
+  
+  /**
+    A collection of `SC.TableColumn` objects. Modify the array to adjust the
+    columns.
+    
+    @property
+    @type Array
+  */
+  columns: [],
+  
+  /**
+    Which column will alter its size so that the columns fill the available
+    width of the table. If `null`, the last column will stretch.
+    
+    @property
+    @type SC.TableColumn
+  */
+  flexibleColumn: null,
+  
+  /**
+    Which column is currently the "active" column for sorting purposes.
+    Doesn't say anything about sorting direction; for that, read the
+    `sortState` property of the sorted column.
+    
+    @property
+    @type SC.TableColumn
+  */
+  sortedColumn: null,
+
+  // ..........................................................
+  // HEAD PROPERTIES
+  // 
+
+  /**
+    if YES, the table view will generate a head row at the top of the table
+    view.
+    
+    @property
+    @type Boolean
+  */
+  hasTableHead: YES,
+    
+  /**
+    The view that serves as the head view for the table (if any).
+    
+    @property
+    @type SC.View
+  */
+  tableHeadView: SC.TableHeadView.design({
+    layout: { top: 0, left: 0, right: 0 }
+  }),
+  
+  /**
+    The height of the table head in pixels.
+    
+    @property
+    @type Number
+  */
+  tableHeadHeight: 18,
+  
+
+  // ..........................................................
+  // ROW PROPERTIES
+  //
+
+  /**
+    Whether all rows in the table will have the same pixel height. If so, we
+    can compute offsets very cheaply.
+    
+    @property
+    @type Boolean
+  */
+  hasUniformRowHeights: YES,
+  
+  /**
+    How high each row should be, in pixels.
+    
+    @property
+    @type Number
+  */
+  rowHeight: 18,
+  
+  /**
+    Which view to use for a table row.
+    
+    @property
+    @type SC.View
+  */
+  exampleView: SC.TableRowView,
+  
+  // ..........................................................
+  // DRAG-REORDER MODE
+  // 
+  
+  isInColumnDragMode: NO,
+  
+    
+  
+  // ..........................................................
+  // OTHER PROPERTIES
+  // 
+  
+  filterKey: null,
+  
+  
+  /**
+    Returns the top offset for the specified content index.  This will take
+    into account any custom row heights and group views.
+    
+    @param {Number} idx the content index
+    @returns {Number} the row offset in pixels
+  */
+  
+  rowOffsetForContentIndex: function(contentIndex) {
+    var top = 0, idx;
+    
+    if (this.get('hasUniformRowHeights')) {
+      return top + (this.get('rowHeight') * contentIndex);
+    } else {
+      for (idx = 0; idx < contentIndex; i++) {
+        top += this.rowHeightForContentIndex(idx);
+      }
+      return top;
+    }    
+  },
+  
+  /**
+    Returns the row height for the specified content index.  This will take
+    into account custom row heights and group rows.
+    
+    @param {Number} idx content index
+    @returns {Number} the row height in pixels
+  */
+  rowHeightForContentIndex: function(contentIndex) {
+    if (this.get('hasUniformRowHeights')) {
+      return this.get('rowHeight');
+    } else {
+      // TODO
+    }
+  },
+  
+  
+  /**  
+    Computes the layout for a specific content index by combining the current
+    row heights.
+    
+    @param {Number} index content index
+  */
+  layoutForContentIndex: function(index) {
+    return {
+      top:    this.rowOffsetForContentIndex(index),
+      height: this.rowHeightForContentIndex(index),
+      left:   0,
+      right:  0
+    };
+  },
+  
+  createItemView: function(exampleClass, idx, attrs) {
+    // Add a `tableView` attribute to each created row so it has a way to
+    // refer back to this view.
+    attrs.tableView = this;
+    return exampleClass.create(attrs);
+  },
+  
+  clippingFrame: function() {
+    var cv = this.get('containerView'),
+        sv = this.get('scrollView'),
+        f  = this.get('frame');
+        
+    if (!sv.get) {
+      return f;
+    }
+
+    return {
+      height: f.height,
+      width:  f.width,
+      x:      sv.get('horizontalScrollOffset'),
+      y:      sv.get('verticalScrollOffset')
+    };
+    
+  }.property('frame', 'content').cacheable(),
+   
+  _sctv_scrollOffsetDidChange: function() {
+    this.notifyPropertyChange('clippingFrame');
+  },
+
+
+  // ..........................................................
+  // SUBCLASS IMPLEMENTATIONS
+  //
+  
+  
+  computeLayout: function() {
+    var layout = arguments.callee.base.apply(this,arguments),
+        containerView = this.get('containerView'),
+        frame = this.get('frame');
+        
+    var minHeight = layout.minHeight;
+    delete layout.minHeight;
+        
+
+    // FIXME: In the middle of initialization, the TableView needs to be
+    // reloaded in order to become aware of the proper display state of the
+    // table rows. This is currently the best heuristic I can find to decide
+    // when to do the reload. But the whole thing is a hack and should be
+    // fixed as soon as possible.
+    // var currentHeight = containerView.get('layout').height;
+    // if (currentHeight !== height) {
+    //   this.reload();
+    // }
+    
+    containerView.adjust('minHeight', minHeight);
+    containerView.layoutDidChange();
+
+    //containerView.adjust('height', height);
+    //containerView.layoutDidChange();
+    
+    this.notifyPropertyChange('clippingFrame');    
+    return layout;
+  },
+  
+  
+  // ..........................................................
+  // INTERNAL SUPPORT
+  // 
+  
+  // When the columns change, go through all the columns and set their tableContent to be this table's content
+  // TODO: should these guys not just have a binding of this instead?
+  _sctv_columnsDidChange: function() {
+
+    var columns = this.get('columns'), 
+        content = this.get('content'),
+        idx;
+    
+    for (idx = 0; idx < columns.get('length'); idx++) {
+      columns.objectAt(idx).set('tableContent', content);
+    }
+    this.get('tableHeadView')._scthv_handleChildren();
+    this.reload();
+
+  }.observes('columns'),
+  
+  // Do stuff when our frame size changes.
+  _sctv_adjustColumnWidthsOnResize: function() {
+
+    var width   = this.get('frame').width;
+    var content = this.get('content'),
+        del = this.delegateFor('isTableDelegate', this.delegate, content);
+    
+    if (this.get('columns').length == 0) return;
+    width = del.tableShouldResizeWidthTo(this, width);
+    
+    var columns = this.get('columns'), totalColumnWidth = 0, idx;
+    
+    for (var idx = 0; idx < columns.length; idx++) {
+      totalColumnWidth += columns.objectAt(idx).get('width');
+    }
+    
+    if (width === 0) width = totalColumnWidth;
+    var flexibleColumn = this.get('flexibleColumn') ||
+      this.get('columns').objectAt(this.get('columns').length - 1);
+    var flexibleWidth = flexibleColumn.get('width') +
+     (width - totalColumnWidth);
+     
+    flexibleColumn.set('width', flexibleWidth);    
+  }.observes('frame'),
+    
+  // =============================================================
+  // = This is all terrible, but will have to do in the interim. =
+  // =============================================================
+  _sctv_sortContent: function() {
+    var sortedColumn = this.get('sortedColumn');
+    var sortKey = sortedColumn.get('key');
+    this.set('orderBy', sortKey);
+  },
+  
+  _sctv_sortedColumnDidChange: function() {
+    var columns = this.get('columns'),
+        sortedColumn = this.get('sortedColumn'),
+        column, idx;
+    
+    for (idx = 0; idx < columns.get('length'); idx++) {
+      column = columns.objectAt(idx);
+      if (column !== sortedColumn) {
+        column.set('sortState', null);
+      }
+    }
+    
+    this.invokeOnce('_sctv_sortContent');
+  }.observes('sortedColumn')    
+});
+
+/* >>>>>>>>>> BEGIN source/views/table_cell.js */
+// ==========================================================================
+// Project:   SproutCore - JavaScript Application Framework
+// Copyright: ©2006-2009 Sprout Systems, Inc. and contributors.
+//            Portions ©2008-2009 Apple, Inc. All rights reserved.
+// License:   Licened under MIT license (see license.js)
+// ==========================================================================
+
+sc_require('views/table_row');
+
+SC.TableCellView = SC.View.extend({
+  
+  classNames: ['sc-table-cell'],
+  
+  column: null,
+  escapeHTMLBinding: SC.Binding.oneWay('.column.escapeHTML'),
+  formatter: SC.Binding.oneWay('.column.formatter'),
+  
+  displayValue: function() {
+    var value = this.get('content') ;
+    
+    // 1. apply the formatter
+    var formatter = this.get('column').get('formatter');
+    if (formatter) {
+      var formattedValue = (SC.typeOf(formatter) === SC.T_FUNCTION) ? formatter(value, this) : formatter.fieldValueForObject(value, this) ;
+      if (!SC.none(formattedValue)) value = formattedValue ;
+    }
+    
+    if (SC.typeOf(value) === SC.T_ARRAY) {
+      var ary = [];
+      for(var idx=0;idx<value.get('length');idx++) {
+        var x = value.objectAt(idx) ;
+        if (!SC.none(x) && x.toString) x = x.toString() ;
+        ary.push(x) ;
+      }
+      value = ary.join(',') ;
+    }
+    
+    if (!SC.none(value) && value.toString) value = value.toString() ;
+    
+    if (this.get('escapeHTML')) value = SC.RenderContext.escapeHTML(value);
+    
+    return value ;
+  }.property('content', 'escapeHTML', 'formatter').cacheable(),
+  
+  render: function(context, firstTime) {
+    context.push(this.get('displayValue'));
+  },
+  
+  init: function() {
+    var column = this.get('column');
+    
+    column.addObserver('width',    this, '_sctcv_layoutDidChange');
+    column.addObserver('maxWidth', this, '_sctcv_layoutDidChange');
+    column.addObserver('minWidth', this, '_sctcv_layoutDidChange');
+    
+  },
+    
+  _sctcv_layoutDidChange: function(sender, key, value, rev) {
+    var pv = this.get('parentView');
+    SC.run( function() { pv.layoutChildViews(); });
+  }
+});
+
+; tiki.script('sproutcore/table:en/be046b5f5056631186d76179a5f993fcee379c31/javascript.js');/* >>>>>>>>>> BEGIN package_info.js */
 ;tiki.register('sproutcore/testing', {
   "stylesheets": [
     {
@@ -53862,353 +56772,6 @@ component).",
         ]
     }
 };
-
-});
-
-tiki.module("bespin:editor/mixins/textinput",function(require,exports,module) {
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Bespin.
- *
- * The Initial Developer of the Original Code is
- * Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2009
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Bespin Team (bespin@mozilla.com)
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
-
-var SC = require('sproutcore/runtime').SC;
-
-/**
- * @namespace
- *
- * This mixin delivers text input events similar to those defined in the DOM
- * Level 3 specification. It allows views to support internationalized text
- * input via non-US keyboards, dead keys, and/or IMEs. It also provides support
- * for copy and paste. Currently, an invisible contentEditable div is used, but
- * in the future this module should use DOM 3 TextInput events directly where
- * available.
- *
- * To use this mixin, derive from it and implement the functions (don't have to)
- *   - copy: function() { return "text for clipboard" }
- *   - cut: function() { "Cut some text"; return "text for clipboard"}
- *   - textInserted: function(newInsertedText) { "handle new inserted text"; }
- * Note: Pasted text is provied through the textInserted(pastedText) function.
- *
- * Make sure to call the superclass implementation if you override any of the
- * following functions:
- *   - render(context, firstTime)
- *   - didCreateLayer()
- *   - mouseDown(event)
- *   - willBecomeKeyResponderFrom(responder)
- *   - willLoseKeyResponderTo(responder)
- */
-exports.TextInput = {
-    _TextInput_composing: false,
-    _TextInput_ignore: false,
-    _TextInput_textFieldId: undefined,
-    _TextInput_textFieldDom: undefined,
-
-    // Keyevents and copy/cut/paste are not the same on Safari and Chrome.
-    _isChrome: !!parseFloat(navigator.userAgent.split("Chrome/")[1]),
-
-    // This function doesn't work on WebKit! The textContent comes out empty...
-    _TextInput_textFieldChanged: function() {
-        if (this._TextInput_composing || this._TextInput_ignore) {
-            return;
-        }
-
-        var textField = this._TextInput_textFieldDom;
-        var text = textField.value;
-        // On FF textFieldChanged is called sometimes although nothing changed.
-        // -> don't call textInserted() in such a case.
-        if (text == '') {
-            return;
-        }
-        textField.value = "";
-
-        this._TextInput_textInserted(text);
-    },
-
-    _TextInput_copy: function() {
-        var copyData = false;
-        if (this.respondsTo('copy')) {
-            SC.RunLoop.begin();
-            copyData = this.copy();
-            SC.RunLoop.end();
-        }
-        return copyData;
-    },
-
-    _TextInput_cut: function() {
-        var cutData = false;
-        if (this.respondsTo('cut')) {
-            SC.RunLoop.begin();
-            cutData = this.cut();
-            SC.RunLoop.end();
-        }
-        return cutData;
-    },
-
-    _TextInput_textInserted: function(text) {
-        if (this.respondsTo('textInserted')) {
-            SC.RunLoop.begin();
-            this.textInserted(text);
-            SC.RunLoop.end();
-        }
-    },
-
-    _TextInput_setValueAndSelect: function(text) {
-        var textField = this._TextInput_textFieldDom;
-        textField.value = text;
-        textField.select();
-    },
-
-    /**
-     * Gives focus to the field editor so that input events will be
-     * delivered to the view. If you override willBecomeKeyResponderFrom(),
-     * you should call this function in your implementation.
-     */
-    focusTextInput: function() {
-        this._TextInput_textFieldDom.focus();
-    },
-
-    /**
-     * Removes focus from the invisible text input so that input events are no
-     * longer delivered to this view. If you override willLoseKeyResponderTo(),
-     * you should call this function in your implementation.
-     */
-    unfocusTextInput: function() {
-        this._TextInput_textFieldDom.blur();
-    },
-
-    /**
-     * If you override this method, you should call that function as well.
-     */
-    render: function(context, firstTime) {
-        arguments.callee.base.apply(this, arguments);
-
-        if (firstTime) {
-            // Add a textarea to handle focus, copy & paste and key input
-            // within the current view and hide it under the view.
-            var frame = this.get('frame');
-            var textFieldContext = context.begin("textarea");
-            this._TextInput_textFieldId = SC.guidFor(textFieldContext);
-            textFieldContext.id(this._TextInput_textFieldId);
-            textFieldContext.attr("style", ("position: absolute; " +
-                "z-index: -99999; top: 0px; left: 0px; width: %@px; " +
-                "height: %@px").fmt(frame.width, frame.height));
-            textFieldContext.end();
-        }
-    },
-
-    /**
-     * Attaches notification listeners to the text field so that your view will
-     * be notified of events. If you override this method, you should call
-     * that function as well.
-     */
-    didCreateLayer: function() {
-        arguments.callee.base.apply(this, arguments);
-
-        var textField = this.$("#" + this._TextInput_textFieldId)[0];
-        this._TextInput_textFieldDom = textField;
-        var thisTextInput = this;
-
-        // No way that I can see around this ugly browser sniffing, without
-        // more complicated hacks. No browsers have a complete enough
-        // implementation of DOM 3 events at the current time (12/2009). --pcw
-        if (SC.browser.safari) {    // Chrome too
-            // On Chrome the compositionend event is fired as well as the
-            // textInput event, but only one of them has to be handled.
-            if (!this._isChrome) {
-                textField.addEventListener('compositionend', function(evt) {
-                    thisTextInput._TextInput_textInserted(evt.data);
-                }, false);
-            }
-            textField.addEventListener('textInput', function(evt) {
-                thisTextInput._TextInput_textInserted(evt.data);
-            }, false);
-            textField.addEventListener('paste', function(evt) {
-                thisTextInput._TextInput_textInserted(evt.clipboardData.
-                    getData('text/plain'));
-            }, false);
-        } else {
-            var textFieldChangedFn = function(evt) {
-                thisTextInput._TextInput_textFieldChanged();
-            };
-            textField.addEventListener('keypress', textFieldChangedFn, false);
-            textField.addEventListener('keyup', textFieldChangedFn, false);
-
-            textField.addEventListener('compositionstart', function(evt) {
-                thisTextInput._TextInput_composing = true;
-            }, false);
-            textField.addEventListener('compositionend', function(evt) {
-                thisTextInput._TextInput_composing = false;
-                thisTextInput._TextInput_textFieldChanged();
-            }, false);
-
-            textField.addEventListener('paste', function(evt) {
-                // FIXME: This is ugly and could result in extraneous text
-                // being included as part of the text if extra DOMNodeInserted
-                // or DOMCharacterDataModified events happen to be in the queue
-                // when this function runs. But until Fx supports TextInput
-                // events, there's nothing better we can do.
-
-                // Waits till the paste content is pasted to the textarea.
-                // Sometimes a delay of 0 is too short for Fx. In such a case
-                // the keyUp events occur a little bit later and the pasted
-                // content is detected there.
-                thisTextInput._TextInput_setValueAndSelect('');
-                window.setTimeout(function() {
-                    thisTextInput._TextInput_textFieldChanged();
-                }, 0);
-            }, false);
-        }
-
-        // Handle a few keyDown events. For example, stop the ENTER event, as
-        // this one is forwarded via textInserted("\n"), as well as keep it
-        // from being handled by other SC components that listen to the ENTER
-        // event, such as the default button.
-        textField.addEventListener('keydown', function(evt) {
-            switch (evt.keyCode) {
-                case 13: // ENTER
-                    evt.stopPropagation();
-                break;
-            }
-        }, false);
-
-        // Here comes the code for copy and cut...
-
-        // This is the basic copy and cut function. Depending on the
-        // OS and browser this function needs to be extended.
-        var copyCutBaseFn = function(evt) {
-            // Get the data that should be copied/cutted.
-            var copyCutData = evt.type.indexOf('copy') != -1 ?
-                            thisTextInput._TextInput_copy() :
-                            thisTextInput._TextInput_cut();
-            // Set the textField's value equal to the copyCutData.
-            // After this function is called, the real copy or cut
-            // event takes place and the selected text in the
-            // textField is pushed to the OS's clipboard.
-            thisTextInput._TextInput_setValueAndSelect(copyCutData);
-        };
-
-        // For all browsers that are not Safari running on Mac.
-        if (!(SC.browser.isSafari && !this._isChrome && SC.browser.isMac)) {
-            var copyCutMozillaFn = false;
-            if (SC.browser.isMozilla) {
-                // If the browser is Mozilla like, the copyCut function has to
-                // be extended.
-                copyCutMozillaFn = function(evt) {
-                    // Call the basic copyCut function.
-                    copyCutBaseFn(evt);
-
-                    // On Firefox you have to ignore the textarea's content
-                    // until it's copied / cutted. Otherwise the value of the
-                    // textarea is inserted again.
-                    if (SC.browser.isMozilla) {
-                        thisTextInput._TextInput_ignore = true;
-                        window.setTimeout(function() {
-                            thisTextInput._TextInput_setValueAndSelect('');
-                            thisTextInput._TextInput_ignore = false;
-                        }, 0);
-                    }
-                };
-            }
-            textField.addEventListener('copy', copyCutMozillaFn ||
-                copyCutBaseFn, false);
-            textField.addEventListener('cut',  copyCutMozillaFn ||
-                copyCutBaseFn, false);
-         } else {
-            // For Safari on Mac (only!) the copy and cut event only occurs if
-            // you have some text selected. Fortunately, the beforecopy and
-            // beforecut event occurs before the copy or cut event does so we
-            // can put the to be copied or cutted text in the textarea.
-
-            // Also, the cut event is fired twice. If it's fired twice within a
-            // certain time period, the second call will be skipped.
-            var lastCutCall = new Date().getTime();
-            var copyCutSafariMacFn = function(evt) {
-                var doCut = evt.type.indexOf('cut') != -1;
-                if (doCut && new Date().getTime() - lastCutCall < 10) {
-                    return;
-                }
-
-                // Call the basic copyCut function.
-                copyCutBaseFn(evt);
-
-                if (doCut) {
-                    lastCutCall = new Date().getTime();
-                }
-            };
-
-            textField.addEventListener('beforecopy', copyCutSafariMacFn,
-                false);
-            textField.addEventListener('beforecut',  copyCutSafariMacFn,
-                false);
-        }
-
-        // Clicking the address bar causes a blur, but SproutCore won't notice
-        // unless we tell it explicitly.
-        textField.addEventListener('blur', function(evt) {
-            thisTextInput.resignFirstResponder();
-        }, false);
-    },
-
-    /**
-     * The default implementation of this event sets the focus. If you
-     * override this method, you should call that function as well.
-     */
-    mouseDown: function(evt) {
-        arguments.callee.base.apply(this, arguments);
-        this.get('pane').makeFirstResponder(this);
-    },
-
-    /**
-     * The default implementation of this event calls focusTextarea(). If you
-     * override this method, you should call that function as well.
-     */
-    willBecomeKeyResponderFrom: function(responder) {
-        arguments.callee.base.apply(this, arguments);
-        this.focusTextInput();
-    },
-
-    /**
-     * The default implementation of this event calls unfocusTextarea(). If you
-     * override this method, you should call that function as well.
-     */
-    willLoseKeyResponderTo: function(responder) {
-        arguments.callee.base.apply(this, arguments);
-        this.unfocusTextInput();
-    }
-};
-
 
 });
 
@@ -54578,7 +57141,35 @@ exports.Plugin = SC.Object.extend({
             }
         });
     },
+    
+    /*
+     * removes the plugin from Tiki's registries.
+     */
+    _cleanup: function() {
+        var pluginName = this.get("name");
+        
+        // remove all traces of the plugin
 
+        var nameMatch = new RegExp("^" + pluginName + ":");
+
+        _removeFromList(nameMatch, tiki.scripts);
+        _removeFromList(nameMatch, tiki.modules, function(module) {
+            delete tiki._factories[module];
+        });
+        _removeFromList(nameMatch, tiki.stylesheets);
+        _removeFromList(new RegExp("^" + pluginName + "$"), tiki.packages);
+
+        var promises = tiki._promises;
+
+        delete promises.catalog[pluginName];
+        delete promises.loads[pluginName];
+        _removeFromObject(nameMatch, promises.modules);
+        _removeFromObject(nameMatch, promises.scripts);
+        _removeFromObject(nameMatch, promises.stylesheets);
+
+        delete tiki._catalog[pluginName];
+    },
+    
     /**
      * reloads the plugin and reinitializes all
      * dependent plugins
@@ -54642,27 +57233,8 @@ exports.Plugin = SC.Object.extend({
             this.catalog.plugins[dependName].unregister();
         }
 
-        // remove all traces of the plugin
-
-        var nameMatch = new RegExp("^" + pluginName + ":");
-
-        _removeFromList(nameMatch, tiki.scripts);
-        _removeFromList(nameMatch, tiki.modules, function(module) {
-            delete tiki._factories[module];
-        });
-        _removeFromList(nameMatch, tiki.stylesheets);
-        _removeFromList(new RegExp("^" + pluginName + "$"), tiki.packages);
-
-        var promises = tiki._promises;
-
-        delete promises.catalog[pluginName];
-        delete promises.loads[pluginName];
-        _removeFromObject(nameMatch, promises.modules);
-        _removeFromObject(nameMatch, promises.scripts);
-        _removeFromObject(nameMatch, promises.stylesheets);
-
-        delete tiki._catalog[pluginName];
-
+        this._cleanup(pluginName);
+        
         // clear the sandbox of modules from all of the dependent plugins
         var fullModList = [];
         var sandbox = tiki.sandbox;
@@ -54702,7 +57274,7 @@ exports.Plugin = SC.Object.extend({
         }
 
         // reload the plugin metadata
-        this.catalog.loadMetadata(this.reloadURL,
+        this.catalog.loadMetadata(this.reloadURL).then(
             function() {
                 // actually load the plugin, so that it's ready
                 // for any dependent plugins
@@ -54842,8 +57414,34 @@ exports.Catalog = SC.Object.extend({
 
     },
 
+    // Topological sort algorithm from Wikipedia, credited to Tarjan 1976.
+    //     http://en.wikipedia.org/wiki/Topological_sort
+    _toposort: function(metadata) {
+        var sorted = [];
+        var visited = {};
+        var visit = function(key) {
+            if (key in visited || !(key in metadata)) {
+                return;
+            }
+
+            visited[key] = true;
+            var depends = metadata[key].depends;
+            if (!SC.none(depends)) {
+                depends.forEach(visit);
+            }
+
+            sorted.push(key);
+        };
+
+        for (var key in metadata) {
+            visit(key);
+        }
+
+        return sorted;
+    },
+
     load: function(metadata) {
-        for (var name in metadata) {
+        this._toposort(metadata).forEach(function(name) {
             var md = metadata[name];
             md.catalog = this;
             if (md.provides) {
@@ -54867,7 +57465,7 @@ exports.Catalog = SC.Object.extend({
             md.name = name;
             var plugin = exports.Plugin.create(md);
             this.plugins[name] = plugin;
-        }
+        }, this);
     },
 
     /*
@@ -54885,10 +57483,33 @@ exports.Catalog = SC.Object.extend({
             });
         }
     },
-
-    loadMetadata: function(url, callback) {
+    
+    /*
+     * Retrieve metadata from the server. Returns a promise that is
+     * resolved when the metadata has been loaded.
+     */
+    loadMetadata: function(url) {
+        var pr = new Promise();
         SC.Request.create({ address: url }).notify(0, this,
-            this._metadataFinishedLoading, { callback: callback }).send("");
+            this._metadataFinishedLoading, { callback: function(catalog, response) {
+                pr.resolve({catalog: catalog, response: response});
+            }}).send("");
+        return pr;
+    },
+    
+    /*
+     * Removes a plugin, unregistering it and cleaning up.
+     */
+    removePlugin: function(pluginName) {
+        var plugins = this.get("plugins");
+        var plugin = plugins[pluginName];
+        if (plugin == undefined) {
+            throw new Error("Attempted to remove plugin " + pluginName + " which does not exist.");
+        }
+        
+        plugin.unregister();
+        plugin._cleanup();
+        delete plugins[pluginName];
     },
 
     /*
@@ -54923,6 +57544,50 @@ exports.Catalog = SC.Object.extend({
         if (params.callback) {
             params.callback(this, response);
         }
+    },
+    
+    /*
+     * Retrieve an array of the plugin objects.
+     * The opts object can include the following options:
+     * onlyType (string): only include plugins of this type
+     * sortBy (array): list of keys to sort by (the primary sort is first).
+     *                 default is sorted alphabetically by name.
+     */
+    getPlugins: function(opts) {
+        var result = [];
+        var onlyType = opts.onlyType;
+        var plugins = this.get("plugins");
+        for (var key in plugins) {
+            var plugin = plugins[key];
+            
+            // apply the filter
+            if ((onlyType && plugin.type && plugin.type != onlyType) 
+                || plugin.name == "bespin") {
+                continue;
+            }
+            
+            result.push(plugin);
+        }
+        
+        var sortBy = opts.sortBy;
+        if (!sortBy) {
+            sortBy = ["name"];
+        }
+        
+        var sortfunc = function(a, b) {
+            for (var i = 0; i < sortBy.length; i++) {
+                var key = sortBy[i];
+                if (a[key] < b[key]) {
+                    return -1;
+                } else if (b[key] < a[key]) {
+                    return 1;
+                }
+            }
+            return 0;
+        };
+        
+        result.sort(sortfunc);
+        return result;
     }
 });
 
@@ -54949,7 +57614,6 @@ var _removeFromObject = function(regex, obj) {
         }
     }
 };
-// reregister all of the dependent plugins
 
 exports.catalog = exports.Catalog.create();
 
@@ -54957,6 +57621,10 @@ exports.startupHandler = function(ep) {
     ep.load(function(func) {
         func();
     });
+};
+
+exports.getUserPlugins = function() {
+    return exports.catalog.getPlugins({onlyType: "user"});
 };
 
 });
@@ -55129,8 +57797,8 @@ function Deferred(canceller, rejectImmediately){
                     listener.deferred.resolve(newResult);
                 }
                 catch(e){
-                    console.error("promise caught exception ", e);
-                    console.log(printStackTrace({e: e}));
+                    // console.error("promise caught exception ", e);
+                    // console.log(printStackTrace({e: e}));
                     listener.deferred.reject(e);
                 }
                 finally{
@@ -56865,15 +59533,29 @@ exports.text = {
  */
 exports.number = {
     isValid: function(value, typeExt) {
-        return typeof value == "number";
+        if (isNaN(value)) return false;
+        if (value === null) return false;
+        if (value === undefined) return false;
+        if (value === Infinity) return false;
+        return typeof value == "number";// && !isNaN(value);
     },
 
     toString: function(value, typeExt) {
+        if (!value) {
+            return null;
+        }
         return "" + value;
     },
 
     fromString: function(value, typeExt) {
-        return parseInt(value, 10);
+        if (!value) {
+            return null;
+        }
+        var reply = parseInt(value, 10);
+        if (isNaN(reply)) {
+            throw new Error("Can't convert '" + value + "' to a number.");
+        }
+        return reply;
     }
 };
 
@@ -56946,24 +59628,6 @@ exports.selection = {
     }
 };
 
-/**
- * A type that we don't have context for just yet
- */
-exports.deferred = {
-    isValid: function(value, typeExt) {
-        // TODO: optimistic sync/async validation??
-        return typeof value == "string";
-    },
-
-    toString: function(value, typeExt) {
-        return value.toString();
-    },
-
-    fromString: function(value, typeExt) {
-        return value;
-    }
-};
-
 });
 
 tiki.module("Types:types",function(require,exports,module) {
@@ -57016,12 +59680,18 @@ var r = require;
 exports.fromString = function(stringVersion, typeSpec) {
     var promise = new Promise();
 
-    exports.getTypeExt(typeSpec).then(function(typeExt) {
-        typeExt.load(function(type) {
-            var objectVersion = type.fromString(stringVersion, typeExt);
-            promise.resolve(objectVersion);
+    try {
+        exports.getTypeExt(typeSpec).then(function(typeExt) {
+            typeExt.load(function(type) {
+                var objectVersion = type.fromString(stringVersion, typeExt);
+                promise.resolve(objectVersion);
+            });
+        }, function(ex) {
+            promise.reject(ex);
         });
-    });
+    } catch (ex) {
+        promise.reject(ex);
+    }
 
     return promise;
 };
@@ -57033,12 +59703,18 @@ exports.fromString = function(stringVersion, typeSpec) {
 exports.toString = function(objectVersion, typeSpec) {
     var promise = new Promise();
 
-    exports.getTypeExt(typeSpec).then(function(typeExt) {
-        typeExt.load(function(type) {
-            var stringVersion = type.toString(objectVersion, typeExt);
-            promise.resolve(stringVersion);
+    try {
+        exports.getTypeExt(typeSpec).then(function(typeExt) {
+            typeExt.load(function(type) {
+                var stringVersion = type.toString(objectVersion, typeExt);
+                promise.resolve(stringVersion);
+            });
+        }, function(ex) {
+            promise.reject(ex);
         });
-    });
+    } catch (ex) {
+        promise.reject(ex);
+    }
 
     return promise;
 };
@@ -57050,14 +59726,50 @@ exports.toString = function(objectVersion, typeSpec) {
 exports.isValid = function(originalVersion, typeSpec) {
     var promise = new Promise();
 
-    exports.getTypeExt(typeSpec).then(function(typeExt) {
-        typeExt.load(function(type) {
-            var valid = type.isValid(originalVersion, typeExt);
-            promise.resolve(valid);
+    try {
+        exports.getTypeExt(typeSpec).then(function(typeExt) {
+            typeExt.load(function(type) {
+                var valid = type.isValid(originalVersion, typeExt);
+                promise.resolve(valid);
+            });
+        }, function(ex) {
+            promise.reject(ex);
         });
-    });
+    } catch (ex) {
+        promise.reject(ex);
+    }
 
     return promise;
+};
+
+/**
+ * 2 typeSpecs are considered equal if their simple names are the same.
+ */
+exports.equals = function(typeSpec1, typeSpec2) {
+    return exports.getSimpleName(typeSpec1) == exports.getSimpleName(typeSpec2);
+};
+
+/**
+ * Get the simple text-only, no-param version of a typeSpec.
+ */
+exports.getSimpleName = function(typeSpec) {
+    if (!typeSpec) {
+        throw new Error("null|undefined is not a valid typeSpec");
+    }
+
+    if (typeof typeSpec == "string") {
+        return typeSpec;
+    }
+
+    if (typeof typeSpec == "object") {
+        if (!typeSpec.name) {
+            throw new Error("Missing name member to typeSpec");
+        }
+
+        return typeSpec.name;
+    }
+
+    throw new Error("Not a typeSpec: " + typeSpec);
 };
 
 /**
@@ -57067,48 +59779,771 @@ exports.isValid = function(originalVersion, typeSpec) {
  * { name:"typename", data:... } e.g. { name:"selection", data:["one", "two", "three"] }
  */
 exports.getTypeExt = function(typeSpec) {
+    // Warning: This code is virtually cut and paste from CommandLine:typehint.js
+    // It you change this, there are probably parallel changes to be made there
+    // There are 2 differences between the functions:
+    // - We lookup type|typehint in the catalog
+    // - There is a concept of a default typehint, where there is no similar
+    //   thing for types. This is sensible, because hints are optional nice
+    //   to have things. Not so for types.
+    // Whilst we could abstract out the changes, I'm not sure this simplifies
+    // already complex code
     var promise = new Promise();
 
-    var typeExt;
-    if (typeof typeSpec === "string") {
-        var parts = typeSpec.split(":");
-        if (parts.length === 1) {
-            typeExt = catalog.getExtensionByKey("type", typeSpec);
-            if (typeExt) {
-                promise.resolve(typeExt);
+    try {
+        var typeExt;
+        if (typeof typeSpec === "string") {
+            var parts = typeSpec.split(":");
+            if (parts.length === 1) {
+                // The type is just a simple type name
+                typeExt = catalog.getExtensionByKey("type", typeSpec);
+                if (typeExt) {
+                    promise.resolve(typeExt);
+                } else {
+                    promise.reject(new Error("Unknown type: " + typeSpec));
+                }
             } else {
-                promise.reject("Unknown type: " + typeSpec);
+                var name = parts.shift();
+                var data = parts.join(":");
+
+                if (data.substring(0, 1) == "[" || data.substring(0, 1) == "{") {
+                    // JSON data is specified in the string. Yuck
+                    typeExt = catalog.getExtensionByKey("type", name);
+                    typeExt.data = JSON.parse(data);
+                    promise.resolve(typeExt);
+                } else {
+                    // If we don't have embedded JSON, we should have a pointer
+                    var parts = data.split("#");
+                    var modName = parts.shift();
+                    var objName = parts.join("#");
+
+                    // A pointer to something to fetch the data element
+                    r.loader.async(modName).then(function() {
+                        var module = r(modName);
+                        var func = module[objName];
+                        if (!func) {
+                            console.error("Module not found: ", data);
+                            promise.reject(new Error("Module not found: " + data));
+                        } else {
+                            typeExt = catalog.getExtensionByKey("type", name);
+                            typeExt.data = func();
+                            promise.resolve(typeExt);
+                        }
+                    }, function(ex) {
+                        promise.reject(ex);
+                    });
+                }
             }
-        } else {
-            typeExt = catalog.getExtensionByKey("type", parts.shift());
-            var data = parts.join(":");
-            if (data.substring(0, 1) == "[" || data.substring(0, 1) == "{") {
-                typeExt.data = JSON.parse(data);
-                promise.resolve(typeExt);
-            } else {
-                var parts = data.split("#");
+        } else if (typeof typeSpec === "object") {
+            if (typeSpec.name == "deferred") {
+                // Deferred types are specified by the return from the pointer
+                // function.
+                if (!typeSpec.pointer) {
+                    promise.reject(new Error("Missing deferred pointer"));
+                    return;
+                }
+
+                var parts = typeSpec.pointer.split("#");
                 var modName = parts.shift();
                 var objName = parts.join("#");
 
                 r.loader.async(modName).then(function() {
                     var module = r(modName);
-                    typeExt.data = module[objName]();
+                    typeExt = module[objName](typeSpec);
+console.log("getTypeExt typeExt", typeExt);
                     promise.resolve(typeExt);
+                }, function(ex) {
+                    promise.reject(ex);
                 });
+            } else {
+                // A type specified in an object, there is likely to be
+                // some accompanying data (e.g. for selection) either directly
+                // in typeSpec.data or to be fetched from a function pointed
+                // at by typeSpec.pointer
+                typeExt = catalog.getExtensionByKey("type", typeSpec.name);
+                if (!typeExt) {
+                    promise.reject(new Error("Unknown type: " + typeSpec.name));
+                    return;
+                }
+
+                if (typeSpec.pointer) {
+                    var parts = typeSpec.pointer.split("#");
+                    var modName = parts.shift();
+                    var objName = parts.join("#");
+
+                    r.loader.async(modName).then(function() {
+                        var module = r(modName);
+                        typeExt.data = module[objName]();
+                        promise.resolve(typeExt);
+                    }, function(ex) {
+                        promise.reject(ex);
+                    });
+                } else {
+                    if (typeSpec.data) {
+                        typeExt.data = typeSpec.data;
+                    }
+
+                    promise.resolve(typeExt);
+                }
             }
         }
-    } else if (typeof typeSpec === "object") {
-        typeExt = catalog.getExtensionByKey("type", typeSpec.name);
-        typeExt.data = typeSpec.data;
-        promise.resolve(typeExt);
+    } catch (ex) {
+        promise.reject(ex);
     }
 
     return promise;
 };
 
+/**
+ * Like getTypeExt() except that we don't support any asynchronous actions
+ * ('deferred' types, and other types with data specified with a pointer).
+ * @return The Type Extension, null the type was not found, or throw if the
+ * type was illegally specified.
+ */
+exports.getTypeExtNow = function(typeSpec) {
+
+    if (typeof typeSpec === "string") {
+        var parts = typeSpec.split(":");
+        if (parts.length === 1) {
+            // The type is just a simple type name
+            return catalog.getExtensionByKey("type", typeSpec);
+        } else {
+            var name = parts.shift();
+            var data = parts.join(":");
+
+            if (data.substring(0, 1) == "[" || data.substring(0, 1) == "{") {
+                // JSON data is specified in the string. Yuck
+                var typeExt = catalog.getExtensionByKey("type", name);
+                typeExt.data = JSON.parse(data);
+                return typeExt;
+            }
+
+            throw new Error("Non array/object data unsupported.");
+        }
+    }
+
+    if (typeof typeSpec === "object") {
+        if (typeSpec.name == "deferred") {
+            throw new Error("deferred types not supported");
+        }
+
+        typeExt = catalog.getExtensionByKey("type", typeSpec.name);
+        if (typeExt && typeSpec.data) {
+            typeExt.data = typeSpec.data;
+        }
+
+        return typeExt;
+    }
+};
+
 });
 
 tiki.module("Types:index",function(require,exports,module){});
+;tiki.register("Settings",{});
+tiki.module("Settings:commands",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var catalog = require("bespin:plugins").catalog;
+
+var settings = require("Settings").settings;
+
+/**
+ * 'set' command
+ */
+exports.setCommand = function(env, args, request) {
+    var html;
+
+    if (!args.setting) {
+        var settingsList = settings._list();
+        html = "";
+        // first sort the settingsList based on the key
+        settingsList.sort(function(a, b) {
+            if (a.key < b.key) {
+                return -1;
+            } else if (a.key == b.key) {
+                return 0;
+            } else {
+                return 1;
+            }
+        });
+
+        settingsList.forEach(function(setting) {
+            html += "<a class='setting' href='https://wiki.mozilla.org/Labs/Bespin/Settings#" +
+                    setting.key +
+                    "' title='View external documentation on setting: " +
+                    setting.key +
+                    "' target='_blank'>" +
+                    setting.key +
+                    "</a> = " +
+                    setting.value +
+                    "<br/>";
+        });
+    } else {
+        if (args.value === undefined) {
+            html = "<strong>" + args.setting + "</strong> = " + settings.get(args.setting);
+        } else {
+            html = "Setting: <strong>" + args.setting + "</strong> = " + args.value;
+            settings.set(args.setting, args.value);
+        }
+    }
+
+    request.done(html);
+};
+
+/**
+ * 'unset' command
+ */
+exports.unsetCommand = function(env, args, request) {
+    settings.resetValue(args.setting);
+    request.done("Reset " + args.setting + " to default: " + settings.get(args.setting));
+};
+
+});
+
+tiki.module("Settings:cookie",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var cookie = require("bespin:util/cookie");
+
+/**
+ * Save the settings in a cookie
+ * This code has not been tested since reboot
+ * @class
+ */
+exports.CookiePersister = SC.Object.create({
+    loadInitialValues: function(settings) {
+        settings._loadDefaultValues().then(function() {
+            var data = cookie.get("settings");
+            settings._loadFromObject(JSON.parse(data));
+        }.bind(this));
+    },
+
+    persistValue: function(settings, key, value) {
+        settings._saveToObject(stringData).then(function() {
+            var data = JSON.stringify(stringData);
+            cookie.set("settings", data);
+        });
+    }
+});
+
+});
+
+tiki.module("Settings:index",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+/**
+ * This plug-in manages settings.
+ *
+ * <p>Some quick terminology: A _Choice_, is something that the application
+ * offers as a way to customize how it works. For each _Choice_ there will be
+ * a number of _Options_ but ultimately the user will have a _Setting_ for each
+ * _Choice_. This _Setting_ maybe the default for that _Choice_.
+ *
+ * <p>It provides an API for controlling the known settings. This allows us to
+ * provide better GUI/CLI support. See setting.js
+ * <p>It provides 3 implementations of a setting store:<ul>
+ * <li>MemorySettings: i.e. temporary, non-persistent. Useful in textarea
+ * replacement type scenarios. See memory.js
+ * <li>CookieSettings: Stores the data in a cookie. Generally not practical as
+ * it slows client server communication (if any). See cookie.js
+ * <li>ServerSettings: Stores data on a server using the <tt>server</tt> API.
+ * See server.js
+ * </ul>
+ * <p>It is expected that an HTML5 storage option will be developed soon. This
+ * plug-in did contain a prototype Gears implementation, however this was never
+ * maintained, and has been deleted due to bit-rot.
+ * <p>This plug-in also provides commands to manipulate the settings from the
+ * CommandLine and Canon plug-ins.
+ *
+ * <p>TODO:<ul>
+ * <li>Check what happens when we alter settings from the UI
+ * <li>Ensure that values can be bound in a SC sense
+ * <li>Convert all subscriptions to bindings.
+ * <li>Implement HTML5 storage option
+ * <li>Make all settings have a 'description' member and use that in set|unset
+ * commands.
+ * <li>When the command system is re-worked to include more GUI interaction,
+ * expose data in settings to that system.
+ * </ul>
+ *
+ * <p>For future versions of the API it might be better to decrease the
+ * dependency on settings, and increase it on the system with a setting.
+ * e.g. Now:
+ * <pre>
+ * setting.addSetting({ name:"foo", ... });
+ * settings.set("foo", "bar");
+ * </pre>
+ * <p>Vs the potentially better:
+ * <pre>
+ * var foo = setting.addSetting({ name:"foo", ... });
+ * foo.value = "bar";
+ * </pre>
+ * <p>Comparison:
+ * <ul>
+ * <li>The latter version gains by forcing access to the setting to be through
+ * the plug-in providing it, so there wouldn't be any hidden dependencies.
+ * <li>It's also more compact.
+ * <li>It could provide access to to other methods e.g. <tt>foo.reset()</tt>
+ * and <tt>foo.onChange(function(val) {...});</tt> (but see SC binding)
+ * <li>On the other hand dependencies are so spread out right now that it's
+ * probably hard to do this easily. We should move to this in the future.
+ * </ul>
+ */
+
+var MemorySettings = require("memory").MemorySettings;
+
+exports.settings = MemorySettings.create();
+
+});
+
+tiki.module("Settings:memory",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var SC = require("sproutcore/runtime").SC;
+var catalog = require("bespin:plugins").catalog;
+
+var Promise = require("bespin:promise").Promise;
+var groupPromises = require("bespin:promise").group;
+
+var types = require("Types:types");
+
+/**
+ * Find and configure the settings object.
+ * @see MemorySettings.addSetting()
+ */
+exports.addSetting = function(settingExt) {
+    require("Settings").settings.addSetting(settingExt);
+};
+
+/**
+ * Fetch an array of the currently known settings
+ */
+exports.getSettings = function() {
+    return catalog.getExtensions("setting");
+};
+
+/**
+ * Something of a hack to allow the set command to give a clearer definition
+ * of the type to the command line.
+ */
+exports.getTypeExtFromAssignment = function(typeSpec) {
+    var typeSpec = "text";
+
+    try {
+        var settingName = typeSpec.assignments.setting.value;
+        if (settingName && settingName !== "") {
+            var settingExt = catalog.getExtensionByKey("setting", settingName);
+            typeSpec = settingExt.type;
+        }
+    } catch (ex) {
+        // Ignore, particularly digging into the assignments could fail
+    }
+
+console.log("getType", typeSpec, "=", typeSpec);
+    return types.getTypeExtNow(typeSpec);
+};
+
+/**
+ * A base class for all the various methods of storing settings.
+ * <p>Usage:
+ * <pre>
+ * // Create manually, or require 'settings' from the container.
+ * // This is the manual version:
+ * var settings = require("bespin:plugins").catalog.getObject("settings");
+ * // Add a new setting
+ * settings.addSetting({ name:"foo", ... });
+ * // Display the default value
+ * alert(settings.get("foo"));
+ * // Alter the value, which also publishes the change etc.
+ * settings.set("foo", "bar");
+ * // Reset the value to the default
+ * settings.resetValue("foo");
+ * </pre>
+ * @class
+ */
+exports.MemorySettings = SC.Object.extend({
+    /**
+     * A Persister is able to store settings. It is an object that defines
+     * two functions:
+     * loadInitialValues(settings) and persistValue(settings, key, value).
+     */
+    setPersister: function(persister) {
+        this._persister = persister;
+        if (persister) {
+            persister.loadInitialValues(this);
+        }
+    },
+
+    /**
+     * Override observable.set(key, value) to provide type conversion and
+     * validation.
+     */
+    set: function(key, value) {
+        var settingExt = catalog.getExtensionByKey("setting", key);
+        if (!settingExt) {
+            throw new Error("Unknown setting: ", key, value);
+        }
+
+        if (typeof value == "string" && settingExt.type == "string") {
+            // no conversion needed
+            return this.superclass(key, value);
+        } else {
+            // We want to call observer.set, and normally could call
+            // superclass(...) to do this but we're prevented because the
+            // promise changes the callee. So we need to cache it.
+            // Excuse me while a puke.
+            var superSet = arguments.callee.base;
+
+            var inline = false;
+            var ex = null;
+
+            types.fromString(value, settingExt.type).then(function(converted) {
+                inline = true;
+                superSet.apply(this, [ key, converted ]);
+            }.bind(this), function(ex1) {
+                ex = ex1;
+            });
+
+            if (ex) {
+                throw ex;
+            }
+
+            if (!inline) {
+                console.warn("About to set string version of ", key, "delaying typed set.");
+                this.superclass(key, value);
+            }
+        }
+
+        return this;
+    },
+
+    /**
+     * Function to add to the list of available settings.
+     * <p>Example usage:
+     * <pre>
+     * var settings = require("bespin:plugins").catalog.getObject("settings");
+     * settings.addSetting({
+     *     name: "tabsize", // For use in settings.get("X")
+     *     type: "number",  // To allow value checking.
+     *     defaultValue: 4  // Default value for use when none is directly set
+     * });
+     * </pre>
+     * @param {object} settingExt Object containing name/type/defaultValue members.
+     */
+    addSetting: function(settingExt) {
+        if (!settingExt.name) {
+            console.error("Setting.name == undefined. Ignoring.", settingExt);
+            return;
+        }
+
+        if (!settingExt.defaultValue === undefined) {
+            console.error("Setting.defaultValue == undefined", settingExt);
+        }
+
+        types.getTypeExt(settingExt.type).then(function(typeExt) {
+            if (!typeExt) {
+                console.error("Setting.type is invalid", settingExt);
+            }
+
+            // Load the type so we can check the validator
+            typeExt.load().then(function(type) {
+                if (!type) {
+                    console.error("type == null", settingExt);
+                }
+
+                if (!type.isValid(settingExt.defaultValue, typeExt)) {
+                    console.error("Setting.isValid(Setting.defaultValue) == false", settingExt);
+                }
+
+                // Set the default value up.
+                this.set(settingExt.name, settingExt.defaultValue);
+
+                // Add a setter to this so subclasses can save
+                this.addObserver(settingExt.name, this, function() {
+                    this._persistValue(settingExt.name, this.get(settingExt.name));
+                }.bind(this));
+            }.bind(this));
+        }.bind(this));
+    },
+
+    /**
+     * Reset the value of the <code>key</code> setting to it's default
+     */
+    resetValue: function(key) {
+        var settingExt = catalog.getExtensionByKey("setting", key);
+        if (settingExt) {
+            this.set(key, settingExt.defaultValue);
+        } else {
+            console.log("ignore resetValue on ", key);
+        }
+    },
+
+    /**
+     * Make a list of the valid type names
+     */
+    _getSettingNames: function() {
+        var typeNames = [];
+        catalog.getExtensions("setting").forEach(function(settingExt) {
+            typeNames.push(settingExt.name);
+        });
+        return typeNames;
+    },
+
+    /**
+     * Retrieve a list of the known settings and their values
+     */
+    _list: function() {
+        var reply = [];
+        this._getSettingNames().forEach(function(setting) {
+            reply.push({
+                'key': setting,
+                'value': this.get(setting)
+            });
+        }.bind(this));
+        return reply;
+    },
+
+    /**
+     * delegates to the persister. no-op if there's no persister.
+     */
+    _persistValue: function(key, value) {
+        var persister = this._persister;
+        if (persister) {
+            persister.persistValue(this, key, value);
+        }
+    },
+
+    /**
+     * Delegates to the persister, otherwise sets up the defaults if no
+     * persister is available.
+     */
+    _loadInitialValues: function() {
+        var persister = this._persister;
+        if (persister) {
+            persister.loadInitialValues(this);
+        } else {
+            this._loadDefaultValues();
+        }
+    },
+
+    /**
+     * Prime the local cache with the defaults.
+     */
+    _loadDefaultValues: function() {
+        return this._loadFromObject(this._defaultValues());
+    },
+
+    /**
+     * Utility to load settings from an object
+     */
+    _loadFromObject: function(data) {
+        var promises = [];
+        for (var key in data) {
+            if (data.hasOwnProperty(key)) {
+                var value = data[key];
+                var settingExt = catalog.getExtensionByKey("setting", key);
+                if (settingExt) {
+                    // TODO: We shouldn't just ignore values without a setting
+                    var promise = types.fromString(value, settingExt.type);
+                    promise.then(function(value) {
+                        this.set(key, value);
+                    });
+                    promises.push(promise);
+                }
+            }
+        }
+
+        // Promise.group (a.k.a groupPromises) gives you a list of all the data
+        // in the grouped promises. We don't want that in case we change how
+        // this works with ignored settings (see above).
+        // So we do this to hide the list of promise resolutions.
+        var replyPromise = new Promise();
+        groupPromises(promises).then(function() {
+            replyPromise.resolve();
+        });
+        return replyPromise;
+    },
+
+    /**
+     * Utility to grab all the settings and export them into an object
+     */
+    _saveToObject: function() {
+        var promises = [];
+        var reply = {};
+
+        this._getSettingNames().forEach(function(key) {
+            var value = this.get(key);
+            var settingExt = catalog.getExtensionByKey("setting", key);
+            if (settingExt) {
+                // TODO: We shouldn't just ignore values without a setting
+                var promise = types.toString(value, settingExt.type);
+                promise.then(function(value) {
+                    reply[key] = value;
+                });
+                promises.push(promise);
+            }
+        }.bind(this));
+
+        var replyPromise = new Promise();
+        groupPromises(promises).then(function() {
+            replyPromise.resolve(reply);
+        });
+        return replyPromise;
+    },
+
+    /**
+     * The default initial settings
+     */
+    _defaultValues: function() {
+        var defaultValues = {};
+        catalog.getExtensions("setting").forEach(function(settingExt) {
+            defaultValues[settingExt.name] = settingExt.defaultValue;
+        });
+        return defaultValues;
+    }
+});
+
+});
 ;tiki.register("Canon",{});
 tiki.module("Canon:commands",function(require,exports,module) {
 /* ***** BEGIN LICENSE BLOCK *****
@@ -57425,9 +60860,13 @@ tiki.module("Canon:keyboard",function(require,exports,module) {
  * ***** END LICENSE BLOCK ***** */
 
 var SC = require('sproutcore/runtime').SC;
+
 var catalog = require("bespin:plugins").catalog;
+
 var Request = require("Canon:request").Request;
 var env = require("Canon:environment");
+
+var printStackTrace = require("bespin:util/stacktrace").printStackTrace;
 
 /**
  * The canon, or the repository of commands, contains functions to process
@@ -57464,7 +60903,7 @@ var KeyboardManager = SC.Object.extend({
                     // TODO: Some UI?
                     console.group("Error calling command: " + commandExt.name);
                     console.error(ex);
-                    console.trace();
+                    console.log(printStackTrace(ex));
                     console.groupEnd();
                     return false;
                 }
@@ -57508,7 +60947,7 @@ var KeyboardManager = SC.Object.extend({
                 }
             }
         }
-        
+
         var mappedKeys = commandExt.key;
         if (!mappedKeys) {
             return false;
@@ -57519,12 +60958,12 @@ var KeyboardManager = SC.Object.extend({
             }
             return true;
         }
-        
+
         if (!mappedKeys.isArray) {
             mappedKeys = [mappedKeys];
             commandExt.key = mappedKeys;
         }
-        
+
         for (var i = 0; i < mappedKeys.length; i++) {
             var keymap = mappedKeys[i];
             if (typeof(keymap) == "string") {
@@ -57533,17 +60972,17 @@ var KeyboardManager = SC.Object.extend({
                 }
                 continue;
             }
-            
+
             if (keymap.key != symbolicName) {
                 continue;
             }
-            
+
             predicates = keymap.predicates;
-            
+
             if (!predicates) {
                 return true;
             }
-            
+
             for (flagName in predicates) {
                 if (!flags || flags[flagName] != predicates[flagName]) {
                     return false;
@@ -57602,12 +61041,26 @@ tiki.module("Canon:request",function(require,exports,module) {
 
 var SC = require("sproutcore/runtime").SC;
 
+var settings = require("Settings").settings;
+
 /**
  * TODO: Consider if this is actually the best way to tell the world about the
  * created Output objects...
  */
 exports.history = SC.Object.create({
-    requests: []
+    requests: [],
+
+    /**
+     * Keep the history to settings.historyLength
+     */
+    trim: function() {
+        var historyLength = settings.get("historyLength");
+        // This could probably be optimized with some maths, but 99.99% of the
+        // time we will only be off by one, so save the maths.
+        while (this.requests.length > historyLength) {
+            this.requests.shiftObject();
+        }
+    }.observes(".requests")
 });
 
 /**
@@ -57624,25 +61077,20 @@ exports.history = SC.Object.create({
  */
 exports.Request = SC.Object.extend({
     // Will be used in the keyboard case and the cli case
-    command: null,
-    commandExt: null,
+    command: undefined,
+    commandExt: undefined,
 
     // Will be used only in the cli case
-    args: {},
-    typed: null,
+    args: undefined,
+    typed: undefined,
 
     // Stuff we keep track of
-    outputs: [],
-    start: new Date(),
-    end: null,
-    duration: null,
-    completed: false,
-    error: false,
-
-    /**
-     * Nastiness to get around sproutcore size problem
-     */
-    _hack: "",
+    outputs: undefined,
+    start: undefined,
+    end: undefined,
+    duration: undefined,
+    completed: undefined,
+    error: undefined,
 
     /**
      * Have we been initialized?
@@ -57651,10 +61099,14 @@ exports.Request = SC.Object.extend({
 
     /**
      * Lazy init to register with the history should only be done on output.
-     * Init is expensive, and won't be used in the majority of cases
+     * init() is expensive, and won't be used in the majority of cases
      */
     _init: function() {
         this.set("_inited", true);
+        this.outputs = [];
+        this.start = new Date();
+        this.completed = false;
+        this.error = false;
         exports.history.requests.pushObject(this);
     },
 
@@ -57673,7 +61125,9 @@ exports.Request = SC.Object.extend({
      * the command exits
      */
     async: function() {
-
+        if (!this.get("_inited")) {
+            this._init();
+        }
     },
 
     /**
@@ -57686,15 +61140,7 @@ exports.Request = SC.Object.extend({
             this._init();
         }
 
-        // Nasty hack that we'll get rid of as soon as we understand SC
-        var hack = this.get("_hack");
-        if (typeof content == "string") {
-            this.set("_hack", hack + content + "<br/>");
-        } else {
-            this.set("_hack", hack + content.innerHTML + "<br/>");
-        }
-
-        this.outputs.push(content);
+        this.outputs.pushObject(content);
         return this;
     },
 
@@ -57756,6 +61202,7 @@ tiki.module("DelegateSupport:index",function(require,exports,module) {
 
 "define metadata";
 ({
+    "description": "Simple support for multiple delegates on an object",
     "depends": []
 });
 "end";
@@ -58846,7 +62293,7 @@ exports.SyntaxManager = SC.Object.extend(MultiDelegateSupport, {
         var index;
         for (index = 0; index < invalidRowCount; index++) {
             var invalidRow = invalidRows[index];
-            if (invalidRow >= startRow && invalidRow < endRow) {
+            if (invalidRow < endRow) {
                 break;
             }
         }
@@ -59405,20 +62852,20 @@ exports.LayoutManager = SC.Object.extend(MultiDelegateSupport, {
      */
     characterAtPoint: function(point) {
         var margin = this.get('margin');
-        var clientX = point.x - margin.left, clientY = point.y - margin.top;
+        var x = point.x - margin.left, y = point.y - margin.top;
 
         var characterWidth = this._characterWidth;
         var textStorage = this.get('textStorage');
         var clampedPosition = textStorage.clampPosition({
-            row:    Math.floor(clientY / this._lineHeight),
-            column: Math.floor(clientX / characterWidth)
+            row:    Math.floor(y / this._lineHeight),
+            column: Math.floor(x / characterWidth)
         });
 
         var lineLength = textStorage.get('lines')[clampedPosition.row].length;
         return SC.mixin(clampedPosition, {
             partialFraction:
-                clientX < 0 || clampedPosition.column === lineLength ? 0.0 :
-                clientX % characterWidth / characterWidth
+                x < 0 || clampedPosition.column === lineLength ? 0.0 :
+                x % characterWidth / characterWidth
         });
     },
 
@@ -59751,7 +63198,9 @@ exports.EditorUndoController = SC.Object.extend({
     },
 
     redo: function(record) {
-        return this._undoOrRedo(record.patches, record.selectionAfter);
+        var patches = record.patches.concat();
+        patches.reverse();
+        return this._undoOrRedo(patches, record.selectionAfter);
     },
 
     textViewBeganChangeGroup: function(sender, selection) {
@@ -59892,6 +63341,361 @@ exports.TextBuffer = {
 
 });
 
+tiki.module("Editor:mixins/textinput",function(require,exports,module) {
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is Bespin.
+ *
+ * The Initial Developer of the Original Code is
+ * Mozilla.
+ * Portions created by the Initial Developer are Copyright (C) 2009
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Bespin Team (bespin@mozilla.com)
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+var SC = require('sproutcore/runtime').SC;
+
+/**
+ * @namespace
+ *
+ * This mixin delivers text input events similar to those defined in the DOM
+ * Level 3 specification. It allows views to support internationalized text
+ * input via non-US keyboards, dead keys, and/or IMEs. It also provides support
+ * for copy and paste. Currently, an invisible contentEditable div is used, but
+ * in the future this module should use DOM 3 TextInput events directly where
+ * available.
+ *
+ * To use this mixin, derive from it and implement the functions (don't have to)
+ *   - copy: function() { return "text for clipboard" }
+ *   - cut: function() { "Cut some text"; return "text for clipboard"}
+ *   - textInserted: function(newInsertedText) { "handle new inserted text"; }
+ * Note: Pasted text is provied through the textInserted(pastedText) function.
+ *
+ * Make sure to call the superclass implementation if you override any of the
+ * following functions:
+ *   - render(context, firstTime)
+ *   - didCreateLayer()
+ *   - mouseDown(event)
+ *   - willBecomeKeyResponderFrom(responder)
+ *   - willLoseKeyResponderTo(responder)
+ */
+exports.TextInput = {
+    _TextInput_composing: false,
+    _TextInput_ignore: false,
+    _TextInput_textFieldId: undefined,
+    _TextInput_textFieldDom: undefined,
+
+    // Keyevents and copy/cut/paste are not the same on Safari and Chrome.
+    _isChrome: !!parseFloat(navigator.userAgent.split("Chrome/")[1]),
+
+    // This function doesn't work on WebKit! The textContent comes out empty...
+    _TextInput_textFieldChanged: function() {
+        if (this._TextInput_composing || this._TextInput_ignore) {
+            return;
+        }
+
+        var textField = this._TextInput_textFieldDom;
+        var text = textField.value;
+        // On FF textFieldChanged is called sometimes although nothing changed.
+        // -> don't call textInserted() in such a case.
+        if (text == '') {
+            return;
+        }
+        textField.value = "";
+
+        this._TextInput_textInserted(text);
+    },
+
+    _TextInput_copy: function() {
+        var copyData = false;
+        if (this.respondsTo('copy')) {
+            SC.RunLoop.begin();
+            copyData = this.copy();
+            SC.RunLoop.end();
+        }
+        return copyData;
+    },
+
+    _TextInput_cut: function() {
+        var cutData = false;
+        if (this.respondsTo('cut')) {
+            SC.RunLoop.begin();
+            cutData = this.cut();
+            SC.RunLoop.end();
+        }
+        return cutData;
+    },
+
+    _TextInput_textInserted: function(text) {
+        if (this.respondsTo('textInserted')) {
+            SC.RunLoop.begin();
+            this.textInserted(text);
+            SC.RunLoop.end();
+        }
+    },
+
+    _TextInput_setValueAndSelect: function(text) {
+        var textField = this._TextInput_textFieldDom;
+        textField.value = text;
+        textField.select();
+    },
+
+    /**
+     * Gives focus to the field editor so that input events will be
+     * delivered to the view. If you override willBecomeKeyResponderFrom(),
+     * you should call this function in your implementation.
+     */
+    focusTextInput: function() {
+        this._TextInput_textFieldDom.focus();
+    },
+
+    /**
+     * Removes focus from the invisible text input so that input events are no
+     * longer delivered to this view. If you override willLoseKeyResponderTo(),
+     * you should call this function in your implementation.
+     */
+    unfocusTextInput: function() {
+        this._TextInput_textFieldDom.blur();
+    },
+
+    /**
+     * If you override this method, you should call that function as well.
+     */
+    render: function(context, firstTime) {
+        arguments.callee.base.apply(this, arguments);
+
+        if (firstTime) {
+            // Add a textarea to handle focus, copy & paste and key input
+            // within the current view and hide it under the view.
+            var frame = this.get('frame');
+            var textFieldContext = context.begin("textarea");
+            this._TextInput_textFieldId = SC.guidFor(textFieldContext);
+            textFieldContext.id(this._TextInput_textFieldId);
+            textFieldContext.attr("style", "position: absolute; " +
+                "z-index: -99999; top: 0px; left: 0px; width: 0px; " +
+                "height: 0px");
+            textFieldContext.end();
+        }
+    },
+
+    /**
+     * Attaches notification listeners to the text field so that your view will
+     * be notified of events. If you override this method, you should call
+     * that function as well.
+     */
+    didCreateLayer: function() {
+        arguments.callee.base.apply(this, arguments);
+
+        var textField = this.$("#" + this._TextInput_textFieldId)[0];
+        this._TextInput_textFieldDom = textField;
+        var thisTextInput = this;
+
+        // No way that I can see around this ugly browser sniffing, without
+        // more complicated hacks. No browsers have a complete enough
+        // implementation of DOM 3 events at the current time (12/2009). --pcw
+        if (SC.browser.safari) {    // Chrome too
+            // On Chrome the compositionend event is fired as well as the
+            // textInput event, but only one of them has to be handled.
+            if (!this._isChrome) {
+                textField.addEventListener('compositionend', function(evt) {
+                    thisTextInput._TextInput_textInserted(evt.data);
+                }, false);
+            }
+            textField.addEventListener('textInput', function(evt) {
+                thisTextInput._TextInput_textInserted(evt.data);
+            }, false);
+            textField.addEventListener('paste', function(evt) {
+                thisTextInput._TextInput_textInserted(evt.clipboardData.
+                    getData('text/plain'));
+                evt.preventDefault();
+            }, false);
+        } else {
+            var textFieldChangedFn = function(evt) {
+                thisTextInput._TextInput_textFieldChanged();
+            };
+            textField.addEventListener('keypress', textFieldChangedFn, false);
+            textField.addEventListener('keyup', textFieldChangedFn, false);
+
+            textField.addEventListener('compositionstart', function(evt) {
+                thisTextInput._TextInput_composing = true;
+            }, false);
+            textField.addEventListener('compositionend', function(evt) {
+                thisTextInput._TextInput_composing = false;
+                thisTextInput._TextInput_textFieldChanged();
+            }, false);
+
+            textField.addEventListener('paste', function(evt) {
+                // FIXME: This is ugly and could result in extraneous text
+                // being included as part of the text if extra DOMNodeInserted
+                // or DOMCharacterDataModified events happen to be in the queue
+                // when this function runs. But until Fx supports TextInput
+                // events, there's nothing better we can do.
+
+                // Waits till the paste content is pasted to the textarea.
+                // Sometimes a delay of 0 is too short for Fx. In such a case
+                // the keyUp events occur a little bit later and the pasted
+                // content is detected there.
+                thisTextInput._TextInput_setValueAndSelect('');
+                window.setTimeout(function() {
+                    thisTextInput._TextInput_textFieldChanged();
+                }, 0);
+            }, false);
+        }
+
+        // Handle a few keyDown events. For example, stop the ENTER event, as
+        // this one is forwarded via textInserted("\n"), as well as keep it
+        // from being handled by other SC components that listen to the ENTER
+        // event, such as the default button.
+        textField.addEventListener('keydown', function(evt) {
+            switch (evt.keyCode) {
+                case 13: // ENTER
+                    evt.stopPropagation();
+                break;
+            }
+        }, false);
+
+        // Here comes the code for copy and cut...
+
+        // This is the basic copy and cut function. Depending on the
+        // OS and browser this function needs to be extended.
+        var copyCutBaseFn = function(evt) {
+            // Get the data that should be copied/cutted.
+            var copyCutData = evt.type.indexOf('copy') != -1 ?
+                            thisTextInput._TextInput_copy() :
+                            thisTextInput._TextInput_cut();
+            // Set the textField's value equal to the copyCutData.
+            // After this function is called, the real copy or cut
+            // event takes place and the selected text in the
+            // textField is pushed to the OS's clipboard.
+            thisTextInput._TextInput_setValueAndSelect(copyCutData);
+        };
+
+        // For all browsers that are not Safari running on Mac.
+        if (!(SC.browser.isSafari && !this._isChrome && SC.browser.isMac)) {
+            var copyCutMozillaFn = false;
+            if (SC.browser.isMozilla) {
+                // If the browser is Mozilla like, the copyCut function has to
+                // be extended.
+                copyCutMozillaFn = function(evt) {
+                    // Call the basic copyCut function.
+                    copyCutBaseFn(evt);
+
+                    // On Firefox you have to ignore the textarea's content
+                    // until it's copied / cutted. Otherwise the value of the
+                    // textarea is inserted again.
+                    if (SC.browser.isMozilla) {
+                        thisTextInput._TextInput_ignore = true;
+                        window.setTimeout(function() {
+                            thisTextInput._TextInput_setValueAndSelect('');
+                            thisTextInput._TextInput_ignore = false;
+                        }, 0);
+                    }
+                };
+            }
+            textField.addEventListener('copy', copyCutMozillaFn ||
+                copyCutBaseFn, false);
+            textField.addEventListener('cut',  copyCutMozillaFn ||
+                copyCutBaseFn, false);
+         } else {
+            // For Safari on Mac (only!) the copy and cut event only occurs if
+            // you have some text selected. Fortunately, the beforecopy and
+            // beforecut event occurs before the copy or cut event does so we
+            // can put the to be copied or cutted text in the textarea.
+
+            // Also, the cut event is fired twice. If it's fired twice within a
+            // certain time period, the second call will be skipped.
+            var lastCutCall = new Date().getTime();
+            var copyCutSafariMacFn = function(evt) {
+                var doCut = evt.type.indexOf('cut') != -1;
+                if (doCut && new Date().getTime() - lastCutCall < 10) {
+                    return;
+                }
+
+                // Call the basic copyCut function.
+                copyCutBaseFn(evt);
+
+                if (doCut) {
+                    lastCutCall = new Date().getTime();
+                }
+            };
+
+            textField.addEventListener('beforecopy', copyCutSafariMacFn,
+                false);
+            textField.addEventListener('beforecut',  copyCutSafariMacFn,
+                false);
+        }
+
+        // Clicking the address bar causes a blur, but SproutCore won't notice
+        // unless we tell it explicitly.
+        textField.addEventListener('blur', function(evt) {
+            thisTextInput.resignFirstResponder();
+        }, false);
+
+        // If the textinput gets the focus from a non SproutCore view, the
+        // willBecomeKeyResponderFrom() will not be called. For this reason,
+        // the textInput has to listen to the focus event itself.
+        textField.addEventListener('focus', function(evt) {
+            thisTextInput.becomeFirstResponder();
+        }, false);
+    },
+
+    /**
+     * The default implementation of this event sets the focus. If you
+     * override this method, you should call that function as well.
+     */
+    mouseDown: function(evt) {
+        arguments.callee.base.apply(this, arguments);
+        this.becomeFirstResponder();
+    },
+
+    /**
+     * The default implementation of this event calls focusTextarea(). If you
+     * override this method, you should call that function as well.
+     */
+    willBecomeKeyResponderFrom: function(responder) {
+        arguments.callee.base.apply(this, arguments);
+        this.focusTextInput();
+    },
+
+    /**
+     * The default implementation of this event calls unfocusTextarea(). If you
+     * override this method, you should call that function as well.
+     */
+    willLoseKeyResponderTo: function(responder) {
+        arguments.callee.base.apply(this, arguments);
+        this.unfocusTextInput();
+    }
+};
+
+
+});
+
 tiki.module("Editor:models/textstorage",function(require,exports,module) {
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -59965,6 +63769,17 @@ exports.TextStorage = SC.Object.extend(MultiDelegateSupport, TextBuffer, {
         return {
             row:    row,
             column: Math.max(0, Math.min(position.column, lines[row].length))
+        };
+    },
+
+    /**
+     * Returns the actual range closest to the given range, according to the
+     * selection rules.
+     */
+    clampRange: function(range) {
+        return {
+            start:  this.clampPosition(range.start),
+            end:    this.clampPosition(range.end)
         };
     },
 
@@ -60120,12 +63935,10 @@ exports._distanceFromBounds = function(value, low, high) {
 };
 
 /**
- * Merges the given rectangle with the given set and returns the resulting set
- * of non-overlapping rectangles.
+ * Merges the rectangles in a given set and returns the resulting set of non-
+ * overlapping rectanlges.
  */
-exports.addRectToSet = function(set, rect) {
-    set = set.concat(rect);
-
+exports.merge = function(set) {
     var modified;
     do {
         modified = false;
@@ -60136,17 +63949,16 @@ exports.addRectToSet = function(set, rect) {
             newSet.push(rectA);
             for (var j = i+1; j < set.length; j++) {
                 var rectB = set[j];
-                if (!exports.rectsIntersect(rectA, rectB)) {
-                    continue;
+                if (exports.rectsSideBySide(rectA, rectB) ||
+                                        exports.rectsIntersect(rectA, rectB)) {
+                    set.removeAt(j, 1);
+
+                    // There's room for optimization here...
+                    newSet[newSet.length - 1] = SC.unionRects(rectA, rectB);
+
+                    modified = true;
+                    break;
                 }
-
-                set.removeAt(j, 1);
-
-                // There's room for optimization here...
-                newSet[newSet.length - 1] = SC.unionRects(rectA, rectB);
-
-                modified = true;
-                break;
             }
         }
 
@@ -60154,7 +63966,7 @@ exports.addRectToSet = function(set, rect) {
     } while (modified);
 
     return set;
-};
+},
 
 /**
  * Returns the vector representing the shortest offset between the given
@@ -60174,6 +63986,32 @@ exports.offsetFromRect = function(rect, point) {
 exports.rectsIntersect = function(a, b) {
     var intersection = SC.intersectRects(a, b);
     return intersection.width !== 0 && intersection.height !== 0;
+};
+
+/**
+ * Checks if two rects lay side by side. Returns true if this is true.
+ * For example:
+ *      +------------+---------------+
+ *      |    A       |       B       |
+ *      +------------+---------------+
+ * will be true, but if B is only one pixel shifted up,
+ * then it would return false.
+ */
+exports.rectsSideBySide = function(a, b) {
+    if (a.x == b.x && a.width == b.width) {
+        if (a.y < b.y) {
+            return (a.y + a.height) == b.y;
+        } else {
+            return (b.y + b.height) == a.y;
+        }
+    } else if (a.y == b.y && a.height == b.height) {
+        if (a.x < b.x) {
+            return (a.x + a.width) == b.x;
+        } else {
+            return (b.x + b.width) == a.x;
+        }
+    }
+    return false;
 };
 
 
@@ -60356,26 +64194,32 @@ exports.CanvasView = SC.View.extend({
         context.translate(frame.x, frame.y);
 
         var clippingFrame = this.get('clippingFrame');
-        this._cvInvalidRects.forEach(function(rect) {
-            context.save();
 
-            rect = SC.intersectRects(rect, clippingFrame);
-            if (rect.width !== 0 && rect.height !== 0) {
-                var x = rect.x, y = rect.y;
-                var width = rect.width, height = rect.height;
-                context.beginPath();
-                context.moveTo(x, y);
-                context.lineTo(x + width, y);
-                context.lineTo(x + width, y + height);
-                context.lineTo(x, y + height);
-                context.closePath();
-                context.clip();
+        var invalidRects = this._cvInvalidRects;
+        if (invalidRects === 'all') {
+            this.drawRect(clippingFrame, context);
+        } else {
+            Rect.merge(invalidRects).forEach(function(rect) {
+                context.save();
 
-                this.drawRect(rect, context);
-            }
+                rect = SC.intersectRects(rect, clippingFrame);
+                if (rect.width !== 0 && rect.height !== 0) {
+                    var x = rect.x, y = rect.y;
+                    var width = rect.width, height = rect.height;
+                    context.beginPath();
+                    context.moveTo(x, y);
+                    context.lineTo(x + width, y);
+                    context.lineTo(x + width, y + height);
+                    context.lineTo(x, y + height);
+                    context.closePath();
+                    context.clip();
 
-            context.restore();
-        }, this);
+                    this.drawRect(rect, context);
+                }
+
+                context.restore();
+            }, this);
+        }
 
         context.restore();
 
@@ -60421,15 +64265,7 @@ exports.CanvasView = SC.View.extend({
      * Invalidates the entire visible region of the canvas.
      */
     setNeedsDisplay: function(rect) {
-        var frame = this.get('frame');
-        this._cvInvalidRects = [
-            {
-                x:      0,
-                y:      0,
-                width:  frame.width,
-                height: frame.height
-            }
-        ];
+        this._cvInvalidRects = 'all';
         this.set('layerNeedsUpdate', true);
     },
 
@@ -60438,7 +64274,11 @@ exports.CanvasView = SC.View.extend({
      * the canvas to be redrawn at the end of the run loop.
      */
     setNeedsDisplayInRect: function(rect) {
-        this._cvInvalidRects = Rect.addRectToSet(this._cvInvalidRects, rect);
+        var invalidRects = this._cvInvalidRects;
+        if (invalidRects !== 'all') {
+            invalidRects.push(rect);
+        }
+
         this.set('layerNeedsUpdate', true);
     },
 
@@ -60733,6 +64573,45 @@ var InteriorGutterView = CanvasView.extend({
 exports.GutterView = SC.View.extend({
     _interiorView: null,
 
+    _computeWidth: function() {
+        var padding = this.get('padding');
+        var paddingWidth = padding.left + padding.right;
+
+        var lineNumberFont = this.get('theme').lineNumberFont;
+
+        var lineCount = this.getPath('layoutManager.textLines').length;
+        var lineCountStr = "" + lineCount;
+
+        var canvas = m_scratchcanvas.get();
+        var strWidth = canvas.measureStringWidth(lineNumberFont, lineCountStr);
+
+        return strWidth + paddingWidth;
+    },
+
+    _recomputeLayout: function() {
+        var layoutManager = this.get('layoutManager');
+        var padding = this.get('padding');
+
+        var width = this._computeWidth();
+
+        var layout = SC.clone(this.get('layout'));
+        layout.width = width;
+        this.set('layout', layout);
+
+        var frame = this.get('frame');
+        this._interiorView.set('layout', {
+            left:   0,
+            top:    -this.get('verticalScrollOffset'),
+            width:  width,
+            height: Math.max(frame.height,
+                    layoutManager.boundingRect().height + padding.bottom)
+        });
+    },
+
+    _verticalScrollOffsetChanged: function() {
+        this._recomputeLayout();
+    }.observes('verticalScrollOffset'),
+
     layout: { left: 0, top: 0, bottom: 0, width: 32 },
 
     /**
@@ -60752,38 +64631,23 @@ exports.GutterView = SC.View.extend({
     padding: { bottom: 30, left: 5, right: 10 },
 
     /**
+     * @property{object}
+     *
+     * The properties of the theme in use.
+     *
+     * TODO: Convert to a SproutCore theme or plugin.
+     */
+    theme: {
+        lineNumberFont: "10pt Monaco, Lucida Console, monospace"
+    },
+
+    /**
      * @property{number}
      *
      * The amount by which the user has scrolled the neighboring editor in
      * pixels.
      */
     verticalScrollOffset: 0,
-
-    _recomputeLayout: function() {
-        var layoutManager = this.get('layoutManager');
-        var padding = this.get('padding');
-
-        var layout = SC.clone(this.get('layout'));
-        layout.width = 32;
-        // padding.left + padding.right + m_scratchcanvas.get().getContext().
-        // measureStringWidth(this.get('theme').lineNumberFont,
-        // "" + (layoutManager.get('textLines').length + 1))
-
-        this.set('layout', layout);
-
-        var frame = this.get('frame');
-        this._interiorView.set('layout', {
-            left:   0,
-            top:    -this.get('verticalScrollOffset'),
-            width:  frame.width,
-            height: Math.max(frame.height,
-                    layoutManager.boundingRect().height + padding.bottom)
-        });
-    },
-
-    _verticalScrollOffsetChanged: function() {
-        this._recomputeLayout();
-    }.observes('verticalScrollOffset'),
 
     createChildViews: function() {
         var interiorView = this.createChildView(InteriorGutterView);
@@ -61181,23 +65045,34 @@ var ScrollerCanvasView = CanvasView.extend({
         var gutterFrame = this._getGutterFrame();
         var clientThickness = this._getClientThickness();
 
+        var gutterLength = this._getGutterLength();
+        var frameLength = this._getFrameLength();
+
+        var size = Math.min(frameLength, maximum) * gutterLength / maximum;
+        var minSize = MINIMUM_HANDLE_SIZE + NIB_LENGTH * 2;
+
+        // Adjust appropriately if the handle is getting too small.
+        if (size < minSize) {
+            size = minSize;
+            gutterLength -= minSize;
+            value *= maximum / (maximum - frameLength);
+        }
+
         switch (parentView.get('layoutDirection')) {
         case SC.LAYOUT_VERTICAL:
             return {
                 x:      clientFrame.x,
                 y:      clientFrame.y + NIB_LENGTH +
-                        value * gutterFrame.height / maximum,
+                        value * gutterLength / maximum,
                 width:  clientThickness,
-                height: Math.min(frame.height, maximum) * gutterFrame.height /
-                        maximum
+                height: size
             };
         case SC.LAYOUT_HORIZONTAL:
             return {
                 x:      clientFrame.x + NIB_LENGTH +
-                        value * gutterFrame.width / maximum,
+                        value * gutterLength / maximum,
                 y:      clientFrame.y,
-                width:  Math.min(frame.width, maximum) * gutterFrame.width /
-                        maximum,
+                width:  size,
                 height: clientThickness
             };
         default:
@@ -61512,10 +65387,10 @@ var ScrollerCanvasView = CanvasView.extend({
         // was not the handle at the moment.
         switch (parentView.get('layoutDirection')) {
         case SC.LAYOUT_HORIZONTAL:
-            this._mouseDownScreenPoint = evt.clientX;
+            this._mouseDownScreenPoint = evt.pageX;
             break;
         case SC.LAYOUT_VERTICAL:
-            this._mouseDownScreenPoint = evt.clientY;
+            this._mouseDownScreenPoint = evt.pageY;
             break;
         default:
             console.assert(false, "unknown layout direction");
@@ -61540,10 +65415,10 @@ var ScrollerCanvasView = CanvasView.extend({
             var eventDistance;
             switch (parentView.get('layoutDirection')) {
                 case SC.LAYOUT_HORIZONTAL:
-                    eventDistance = evt.clientX;
+                    eventDistance = evt.pageX;
                     break;
                 case SC.LAYOUT_VERTICAL:
-                    eventDistance = evt.clientY;
+                    eventDistance = evt.pageY;
                     break;
                 default:
                     console.assert(false, "unknown layout direction");
@@ -61553,11 +65428,20 @@ var ScrollerCanvasView = CanvasView.extend({
             var eventDelta = eventDistance - this._mouseDownScreenPoint;
 
             var maximum = parentView.get('maximum');
+            var oldValue = parentView.get('value');
             var gutterLength = this._getGutterLength();
 
-            var oldValue = parentView.get('value');
+            // If the handle's size is clamped to the minimum size, adjust
+            // appropriately.
+            var frameLength = this._getFrameLength();
+            var size = Math.min(frameLength, maximum) * gutterLength / maximum;
+            var minSize = MINIMUM_HANDLE_SIZE + NIB_LENGTH * 2;
+            if (size < minSize) {
+                eventDelta *= maximum / (maximum - frameLength);
+            }
+
             parentView.set('value', oldValue + eventDelta * maximum /
-                gutterLength);
+                                gutterLength);
 
             this._mouseDownScreenPoint = eventDistance;
         }
@@ -61733,8 +65617,9 @@ var LayoutManager = require('controllers/layoutmanager').LayoutManager;
 var MultiDelegateSupport = require('DelegateSupport').MultiDelegateSupport;
 var Range = require('RangeUtils:utils/range');
 var Rect = require('utils/rect');
-var TextInput = require('bespin:editor/mixins/textinput').TextInput;
+var TextInput = require('mixins/textinput').TextInput;
 var keyboardManager = require('Canon:keyboard').keyboardManager;
+var settings = require('Settings').settings;
 
 // Set this to true to outline all text ranges with a box. This may be useful
 // when optimizing syntax highlighting engines.
@@ -61744,6 +65629,8 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
     _dragPoint: null,
     _dragTimer: null,
     _inChangeGroup: false,
+    _insertionPointBlinkTimer: null,
+    _insertionPointVisible: true,
 
     // TODO: calculate from the size or let the user override via themes if
     // desired
@@ -61766,29 +65653,42 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         var point = this.convertFrameFromView(this._dragPoint);
         var offset = Rect.offsetFromRect(this.get('clippingFrame'), point);
 
-        this._moveCursorTo(this._selectionPositionForPoint({
+        this.moveCursorTo(this._selectionPositionForPoint({
                 x:  point.x - offset.x,
                 y:  point.y - offset.y
-            }), false, true);
+            }), true);
 
         this.becomeFirstResponder();
     },
 
     // Draws a single insertion point.
     _drawInsertionPoint: function(rect, context) {
+        if (!this._insertionPointVisible) {
+            return;
+        }
+
         var range = this._selectedRange;
         var characterRect = this.get('layoutManager').
             characterRectForPosition(range.start);
+        var x = characterRect.x, y = characterRect.y;
+        var width = characterRect.width, height = characterRect.height;
 
         context.save();
 
-        context.strokeStyle = this.get('theme').cursorStyle;
-        context.beginPath();
-        context.moveTo(characterRect.x + 0.5, characterRect.y);
-        context.lineTo(characterRect.x + 0.5,
-            characterRect.y + characterRect.height);
-        context.closePath();
-        context.stroke();
+        var theme = this.get('theme');
+        if (this.get('isFirstResponder')) {
+            context.strokeStyle = theme.cursorStyle;
+            context.beginPath();
+            context.moveTo(x + 0.5, y);
+            context.lineTo(x + 0.5, y + height);
+            context.closePath();
+            context.stroke();
+        } else {
+            context.fillStyle = theme.unfocusedCursorFillStyle;
+            context.fillRect(x + 0.5, y, width, height);
+            context.strokeStyle = theme.unfocusedCursorStrokeStyle;
+            context.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+        }
 
         context.restore();
     },
@@ -61829,7 +65729,7 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
             }
 
             // And finally draw the line.
-            var column = startColumn;
+            var column = colorRanges[colorIndex].start;
             while (column !== null && column < endColumn) {
                 var colorRange = colorRanges[colorIndex];
                 var colorRangeEnd = colorRange.end;
@@ -61920,12 +65820,19 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
 
         // Update the selection to point immediately after the inserted text.
         var lines = text.split("\n");
-        this._moveCursorTo(lines.length > 1 ?
-            {
+
+        var destPosition;
+        if (lines.length > 1) {
+            destPosition = {
                 row:    range.start.row + lines.length - 1,
                 column: lines[lines.length - 1].length
-            } :
-            Range.addPositions(range.start, { row: 0, column: text.length }));
+            };
+        } else {
+            destPosition = Range.addPositions(range.start,
+                { row: 0, column: text.length });
+        }
+
+        this.moveCursorTo(destPosition);
 
         this._endChangeGroup();
     },
@@ -61937,50 +65844,74 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
 
         var rect = this.get('layoutManager').
             characterRectForPosition(range.start);
-        this.setNeedsDisplayInRect({
-            x:      rect.x,
-            y:      rect.y,
-            width:  1,
-            height: rect.height
-        });
+        this.setNeedsDisplayInRect(rect);
+    },
+
+    _invalidateSelection: function() {
+        var layoutManager = this.get('layoutManager');
+        var range = Range.normalizeRange(this._selectedRange);
+        var rects = layoutManager.rectsForRange(range);
+        rects.forEach(this.setNeedsDisplayInRect, this);
     },
 
     _isDelimiter: function(character) {
-        return [
-            "=", " ", "\t", ">", "<", ".", ",", "(", ")", "{", "}", ":", '"',
-            "'", ";"
-        ].indexOf(character) > -1;
-    },
-
-    _moveCursorTo: function(position, doSaveVirtualEnd, selection) {
-        var positionToUse;
-        var textStorage = this.getPath('layoutManager.textStorage');
-
-        positionToUse = textStorage.clampPosition(position);
-
-        this.setSelection({
-            start:  selection ? this._selectedRange.start : positionToUse,
-            end:    positionToUse
-        });
-
-        if (doSaveVirtualEnd) {
-            if (position.row > 0 && position.row < textStorage.lines.length) {
-                this._selectedRangeEndVirtual = position;
-            } else {
-                this._selectedRangeEndVirtual = position;
-            }
-        } else {
-            this._selectedRangeEndVirtual = null;
-        }
-
-        this._scrollToPosition(this._selectedRange.end);
+        return "\"',;.!~@#$%^&*?[]<>:/\\-+ \t".indexOf(character) !== -1;
     },
 
     _moveOrSelectEnd: function(shift, inLine) {
         var lines = this.getPath('layoutManager.textStorage.lines');
         var row = inLine ? this._selectedRange.end.row : lines.length - 1;
-        this._moveCursorTo({ row: row, column: lines[row].length }, false,
-            shift);
+        this.moveCursorTo({ row: row, column: lines[row].length }, shift);
+    },
+
+    _moveOrSelectNextWord: function(shiftDown) {
+        var lines = this.getPath('layoutManager.textStorage.lines');
+        var end = this._selectedRange.end;
+        var row = end.row, column = end.column;
+
+        var currentLine = lines[row];
+        var changedRow = false;
+
+        if (column >= currentLine.length) {
+            row++;
+            changedRow = true;
+            if (row < lines.length) {
+                column = 0;
+                currentLine = lines[row];
+            } else {
+                currentLine = '';
+            }
+        }
+
+        column = this._seekNextStop(currentLine, column, 1, changedRow);
+
+        this.moveCursorTo({ row: row, column: column }, shiftDown);
+    },
+
+    _moveOrSelectPreviousWord: function(shiftDown) {
+        var lines = this.getPath('layoutManager.textStorage.lines');
+        var end = this._selectedRange.end;
+        var row = end.row, column = end.column;
+
+        var currentLine = lines[row];
+        var changedRow = false;
+
+        if (column > currentLine.length) {
+            column = currentLine.length;
+        } else if (column == 0) {
+            row--;
+            changedRow = true;
+            if (row > -1) {
+                currentLine = lines[row];
+                column = currentLine.length;
+            } else {
+                currentLine = '';
+            }
+        }
+
+        column = this._seekNextStop(currentLine, column, -1, changedRow);
+
+        this.moveCursorTo({ row: row, column: column }, shiftDown);
     },
 
     _moveOrSelectStart: function(shift, inLine) {
@@ -61991,7 +65922,7 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
             column: 0
         };
 
-        this._moveCursorTo(position, false, shift);
+        this.moveCursorTo(position, shift);
     },
 
     _performBackspaceOrDelete: function(isBackspace) {
@@ -62022,7 +65953,7 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
 
         // Position the insertion point at the start of all the ranges that
         // were just deleted.
-        this._moveCursorTo(range.start);
+        this.moveCursorTo(range.start);
 
         this._endChangeGroup();
     },
@@ -62034,11 +65965,29 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         var newPosition = Range.addPositions(oldPosition,
             { row: offset, column: 0 });
 
-        this._moveCursorTo(newPosition, true, true);
+        this.moveCursorTo(newPosition, true, true);
     },
 
     _rangeIsInsertionPoint: function(range) {
         return Range.isZeroLength(range);
+    },
+
+    _rearmInsertionPointBlinkTimer: function() {
+        if (!this._insertionPointVisible) {
+            // Make sure it ends up visible.
+            this.blinkInsertionPoint();
+        }
+
+        if (this._insertionPointBlinkTimer !== null) {
+            this._insertionPointBlinkTimer.invalidate();
+        }
+
+        this._insertionPointBlinkTimer = SC.Timer.schedule({
+            target:     this,
+            action:     'blinkInsertionPoint',
+            interval:   750,
+            repeats:    true
+        });
     },
 
     _replaceCharacters: function(oldRange, characters) {
@@ -62152,6 +66101,38 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         this._drag();
     },
 
+    _seekNextStop: function(text, column, dir, rowChanged) {
+        var isDelim;
+        var countDelim = 0;
+        var wasOverNonDelim = false;
+
+        if (dir < 0) {
+            column--;
+            if (rowChanged) {
+                countDelim = 1;
+            }
+        }
+
+        while (column < text.length && column > -1) {
+            isDelim = this._isDelimiter(text[column]);
+            if (isDelim) {
+                countDelim++;
+            } else {
+                wasOverNonDelim = true;
+            }
+            if ((isDelim || countDelim > 1) && wasOverNonDelim) {
+                break;
+            }
+            column += dir;
+        }
+
+        if (dir < 0) {
+            column++;
+        }
+
+        return column;
+    },
+
     // Returns the character closest to the given point, obeying the selection
     // rules (including the partialFraction field).
     _selectionPositionForPoint: function(point) {
@@ -62204,6 +66185,11 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
 
     acceptsFirstResponder: true,
 
+    blinkInsertionPoint: function() {
+        this._insertionPointVisible = !this._insertionPointVisible;
+        this._invalidateInsertionPointIfNecessary(this._selectedRange);
+    },
+
     clippingFrameChanged: function() {
         arguments.callee.base.apply(this, arguments);
         this._updateSyntax(null);
@@ -62240,13 +66226,6 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
 
         this._resize();
     },
-
-    /**
-     * @property{number}
-     *
-     * The width of a tab.
-     */
-    tabStop: 8,
 
     /**
      * @property
@@ -62334,13 +66313,36 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         // Allow the user to change the fields of the padding object without
         // screwing up the prototype.
         this.set('padding', SC.clone(this.get('padding')));
-
         this.get('layoutManager').addDelegate(this);
 
         this._resize();
+        this._rearmInsertionPointBlinkTimer();
     },
 
     keyDown: function(evt) {
+        //
+        // Workaround for a SproutCore bug: On Firefox, typing Cmd+Z or
+        // Cmd+Shift+Z on Windows or Mac causes two events to be fired: one
+        // with the symbolic name "ctrl_z" or "ctrl_shift_z" and one with the
+        // the symbolic name "meta_z" or "meta_shift_z".
+        //
+        // TODO: Fix in SproutCore.
+        //
+        if (SC.browser.mozilla) {
+            var symbolicName = evt.commandCodes()[0];
+
+            // handle the undo/redo keys only if they are fired by the keypress
+            // event!
+            if (symbolicName === 'ctrl_z' || symbolicName === 'ctrl_shift_z') {
+                return true;
+            }
+
+            if (symbolicName === 'meta_z') {
+                evt.keyCode = 90;
+                evt.charCode = 0;
+            }
+        }
+
         // SC puts keyDown and keyPress event together. Here we only want to
         // handle the real/browser's keydown event. To do so, we have to check
         // if the evt.charCode value is set. If this isn't set, we have been
@@ -62348,6 +66350,9 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         if (evt.charCode === 0) {
             return keyboardManager.processKeyEvent(evt, this,
                 { isTextView: true });
+        } else if (evt.keyCode === 9) {
+            // Stops the tab. Otherwise the editor can lose focus.
+            evt.preventDefault();
         } else {
             // This is a real keyPress event. This should not be handled,
             // otherwise the textInput mixin can't detect the key events.
@@ -62373,20 +66378,21 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
     },
 
     mouseDown: function(evt) {
+        arguments.callee.base.apply(this, arguments);
+
+        var point = { x: evt.pageX, y: evt.pageY };
+
         switch (evt.clickCount) {
         case 1:
             var pos = this._selectionPositionForPoint(this.
-                convertFrameFromView({
-                    x:  evt.clientX,
-                    y:  evt.clientY
-                }));
-            this._moveCursorTo(pos, false, evt.shiftKey);
+                convertFrameFromView(point));
+            this.moveCursorTo(pos, evt.shiftKey);
             break;
 
         // Select the word under the cursor.
         case 2:
             var pos = this._selectionPositionForPoint(this.
-                convertFrameFromView({ x: evt.clientX, y: evt.clientY }));
+                convertFrameFromView(point));
             var line = this.getPath('layoutManager.textStorage').
                                                         lines[pos.row];
 
@@ -62412,21 +66418,15 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
             var columnFrom = searchForDelimiter(pos.column, -1);
             var columnTo   = searchForDelimiter(pos.column, 1);
 
-            this._moveCursorTo({
-                    row: pos.row,
-                    column: columnFrom
-            });
-            this._moveCursorTo({
-                    row: pos.row,
-                    column: columnTo
-            }, false, true);
+            this.moveCursorTo({ row: pos.row, column: columnFrom });
+            this.moveCursorTo({ row: pos.row, column: columnTo }, true);
 
             break;
 
         case 3:
             var lines = this.getPath('layoutManager.textStorage').lines;
             var pos = this._selectionPositionForPoint(this.
-                convertFrameFromView({ x: evt.clientX, y: evt.clientY }));
+                convertFrameFromView(point));
             this.setSelection({
                 start: {
                     row: pos.row,
@@ -62440,19 +66440,17 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
             break;
         }
 
-        this._dragPoint = { x: evt.clientX, y: evt.clientY };
+        this._dragPoint = point;
         this._dragTimer = SC.Timer.schedule({
             target:     this,
             action:     '_scrollWhileDragging',
             interval:   100,
             repeats:    true
         });
-
-        this.becomeFirstResponder();
     },
 
     mouseDragged: function(evt) {
-        this._dragPoint = { x: evt.clientX, y: evt.clientY };
+        this._dragPoint = { x: evt.pageX, y: evt.pageY };
         this._drag();
     },
 
@@ -62460,6 +66458,47 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         if (this._dragTimer !== null) {
             this._dragTimer.invalidate();
         }
+    },
+
+    /**
+     * Moves the cursor.
+     *
+     * @param position{Position} The position to move the cursor to.
+     *
+     * @param select{bool} Whether to preserve the selection origin. If this
+     *        parameter is false, the selection is removed, and the insertion
+     *        point moves to @position. Typically, this parameter is set when
+     *        the mouse is being dragged or the shift key is held down.
+     *
+     * @param virtual{bool} Whether to save the current end position as the
+     *        virtual insertion point. Typically, this parameter is set when
+     *        moving vertically.
+     */
+    moveCursorTo: function(position, select, virtual) {
+        var textStorage = this.getPath('layoutManager.textStorage');
+        var positionToUse = textStorage.clampPosition(position);
+
+        this.setSelection({
+            start:  select ? this._selectedRange.start : positionToUse,
+            end:    positionToUse
+        });
+
+        if (virtual) {
+            var lineCount = textStorage.get('lines').length;
+            var row = position.row, column = position.column;
+            if (row > 0 && row < lineCount) {
+                this._selectedRangeEndVirtual = position;
+            } else {
+                this._selectedRangeEndVirtual = {
+                    row:    row < 1 ? 0 : lineCount - 1,
+                    column: column
+                };
+            }
+        } else {
+            this._selectedRangeEndVirtual = null;
+        }
+
+        this._scrollToPosition(this._selectedRange.end);
     },
 
     moveDocEnd: function() {
@@ -62482,16 +66521,16 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         }
         position = Range.addPositions(position, { row: 1, column: 0 });
 
-        this._moveCursorTo(position, true);
+        this.moveCursorTo(position, false, true);
     },
 
     moveLeft: function() {
         var range = Range.normalizeRange(this._selectedRange);
         if (this._rangeIsInsertionPoint(range)) {
-            this._moveCursorTo(this.getPath('layoutManager.textStorage').
+            this.moveCursorTo(this.getPath('layoutManager.textStorage').
                 displacePosition(range.start, -1));
         } else {
-            this._moveCursorTo(range.start);
+            this.moveCursorTo(range.start);
         }
     },
 
@@ -62506,10 +66545,10 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
     moveRight: function() {
         var range = Range.normalizeRange(this._selectedRange);
         if (this._rangeIsInsertionPoint(range)) {
-            this._moveCursorTo(this.getPath('layoutManager.textStorage').
+            this.moveCursorTo(this.getPath('layoutManager.textStorage').
                 displacePosition(range.end, 1));
         } else {
-            this._moveCursorTo(range.end);
+            this.moveCursorTo(range.end);
         }
     },
 
@@ -62520,7 +66559,15 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
             column: this._getVirtualSelection().end.column
         }, { row: -1, column: 0 });
 
-        this._moveCursorTo(position, true);
+        this.moveCursorTo(position, false, true);
+    },
+
+    moveNextWord: function() {
+        this._moveOrSelectNextWord(false);
+    },
+
+    movePreviousWord: function() {
+        this._moveOrSelectPreviousWord(false);
     },
 
     /**
@@ -62575,8 +66622,8 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
     },
 
     selectLeft: function() {
-        this._moveCursorTo((this.getPath('layoutManager.textStorage').
-            displacePosition(this._selectedRange.end, -1)), false, true);
+        this.moveCursorTo((this.getPath('layoutManager.textStorage').
+            displacePosition(this._selectedRange.end, -1)), true);
     },
 
     selectLineEnd: function() {
@@ -62587,9 +66634,17 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         this._moveOrSelectStart(true, true);
     },
 
+    selectNextWord: function() {
+        this._moveOrSelectNextWord(true);
+    },
+
+    selectPreviousWord: function() {
+        this._moveOrSelectPreviousWord(true);
+    },
+
     selectRight: function() {
-        this._moveCursorTo((this.getPath('layoutManager.textStorage').
-            displacePosition(this._selectedRange.end, 1)), false, true);
+        this.moveCursorTo((this.getPath('layoutManager.textStorage').
+            displacePosition(this._selectedRange.end, 1)), true);
     },
 
     selectUp: function() {
@@ -62597,15 +66652,16 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
     },
 
     /**
-     * Directly replaces the current selection with a new one. No bounds
-     * checking is performed, and the user is not able to undo this action.
+     * Directly replaces the current selection with a new one.
      */
     setSelection: function(newRange) {
-        var lines = this.getPath('layoutManager.textStorage').lines.length - 1;
+        var textStorage = this.getPath('layoutManager.textStorage');
 
         var oldRangeOrdered = Range.normalizeRange(this._selectedRange);
-        var newRangeOrdered = Range.normalizeRange(newRange);
-        this._selectedRange = newRange;
+
+        var newRangeClamped = textStorage.clampRange(newRange);
+        var newRangeOrdered = Range.normalizeRange(newRangeClamped);
+        this._selectedRange = newRangeClamped;
 
         var layoutManager = this.get('layoutManager');
         layoutManager.rectsForRange(oldRangeOrdered).
@@ -62618,11 +66674,13 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
         // character regions.
         this._invalidateInsertionPointIfNecessary(oldRangeOrdered);
         this._invalidateInsertionPointIfNecessary(newRangeOrdered);
+
+        this._rearmInsertionPointBlinkTimer();
     },
 
     tab: function() {
-        var tabStop = this.get('tabStop');
-        var count = tabStop - this._selectedRange.start.column % tabStop;
+        var tabstop = settings.get('tabstop');
+        var count = tabstop - this._selectedRange.start.column % tabstop;
 
         var str = "";
         for (var i = 0; i < count; i++) {
@@ -62641,8 +66699,20 @@ exports.TextView = CanvasView.extend(MultiDelegateSupport, TextInput, {
     },
 
     focus: function() {
-      this.focusTextInput();
-      this.becomeFirstResponder();
+        this.focusTextInput();
+    },
+
+    willBecomeKeyResponderFrom: function() {
+        arguments.callee.base.apply(this, arguments);
+        this._invalidateSelection();
+        this._rearmInsertionPointBlinkTimer();
+    },
+
+    willLoseKeyResponderTo: function() {
+        arguments.callee.base.apply(this, arguments);
+        this._invalidateSelection();
+        this._insertionPointBlinkTimer.invalidate();
+        this._insertionPointVisible = true;
     }
 });
 
@@ -62688,7 +66758,8 @@ tiki.module("Filesystem:index",function(require,exports,module) {
 var SC = require("sproutcore/runtime").SC;
 var util = require("bespin:util/util");
 var pathUtil = require("path");
-var Promise = require("bespin:promise").Promise;
+var m_promise = require("bespin:promise");
+var Promise = m_promise.Promise;
 
 var NEW = exports.NEW = {name: "NEW"};
 var LOADING = exports.LOADING = {name: "LOADING"};
@@ -62741,17 +66812,20 @@ exports.Directory = SC.Object.extend({
         }
     },
 
-    /*
-    * Populates this directory object asynchronously with data.
-    * If everything goes well, onSuccess is called with this directory
-    * object as the argument. Otherwise, onFailure is called with an
-    * error object containing, at the least, "message".
-    *
-    * Call loadDirectory on the FileSource with the parameters
-    * path, directory handler delegate (this), and the onSuccess and onFailure
-    * callbacks.
-    */
-    load: function() {
+    /**
+     * Populates this directory object asynchronously with data.
+     * If everything goes well, onSuccess is called with this directory
+     * object as the argument. Otherwise, onFailure is called with an
+     * Error object containing a message.
+     *
+     * Call loadDirectory on the FileSource with the parameters
+     * path, directory handler delegate (this), and the onSuccess and onFailure
+     * callbacks.
+     *
+     * @param deep{bool} If "deep" is set, then the entire directory tree
+     *        rooted at this location is returned.
+     */
+    load: function(deep) {
         var pr = new Promise();
         if (this.get("status") == READY) {
             pr.resolve(this);
@@ -62759,34 +66833,29 @@ exports.Directory = SC.Object.extend({
         }
         this.set("status", LOADING);
         var self = this;
-        this.get("source").loadDirectory(this).then(
+        this.get("source").loadDirectory(this, deep).then(
             function(data) {
                 self.populateDirectory(data);
                 pr.resolve(self);
             },
             function(error) {
-                pr.reject({
-                    message: error.toString(),
-                    error: error,
-                    directory: self
-                });
+                error.directory = self;
+                pr.reject(error);
             }
         );
         return pr;
     },
 
-    /*
-    * Retrieve the object at the path given, and load it (if it's
-    * a directory)
-    */
+    /**
+     * Retrieve the object at the path given, and load it (if it's
+     * a directory)
+     */
     loadPath: function(path) {
         var pr;
         var obj = this.getObject(path);
         if (obj == null) {
             pr = new Promise();
-            pr.reject({
-                message: "Cannot find " + path
-            });
+            pr.reject(new Error("Cannot find " + path));
             return pr;
         }
         if (pathUtil.isDir(path)) {
@@ -62809,11 +66878,11 @@ exports.Directory = SC.Object.extend({
         return collection.findProperty("name", name);
     },
 
-    /*
-    * Retrieves an object (File or Directory) under this Directory
-    * at the path given. If necessary, it will create objects along
-    * the way.
-    */
+    /**
+     * Retrieves an object (File or Directory) under this Directory
+     * at the path given. If necessary, it will create objects along
+     * the way.
+     */
     getObject: function(path) {
         var segments = path.split("/");
         var isDir = pathUtil.isDir(path);
@@ -62876,18 +66945,18 @@ exports.Directory = SC.Object.extend({
         return this.get("name");
     }.property().cacheable(),
 
-    /*
-    * The originPath finds the path within the same file source.
-    * So, if you have a hierarchy of directories built from different
-    * sources, this path is guaranteed to only include the parts of
-    * the path from the same source as this directory.
-    *
-    * If you're looking up a file on a server, for example, you would
-    * use this path.
-    *
-    * At the moment, originPath is not truly implemented (it just returns
-    * the path). However, filesources should use this.
-    */
+    /**
+     * The originPath finds the path within the same file source.
+     * So, if you have a hierarchy of directories built from different
+     * sources, this path is guaranteed to only include the parts of
+     * the path from the same source as this directory.
+     *
+     * If you're looking up a file on a server, for example, you would
+     * use this path.
+     *
+     * At the moment, originPath is not truly implemented (it just returns
+     * the path). However, filesources should use this.
+     */
     originPath: function() {
         return this.get("path");
     }.property().cacheable(),
@@ -62896,34 +66965,96 @@ exports.Directory = SC.Object.extend({
         return "Directory " + this.get("name");
     },
 
-    /*
-    * Generally by a FileSource to put the data in this Directory.
-    * It contains an array of objects. Each one needs to minimally have
-    * a name. If the name ends with "/" it is assumed to be a directory.
-    * Object references will be properly filled in (parent and source
-    * on directories, directory on files).
-    */
+    /**
+     * Generally by a FileSource to put the data in this Directory.
+     * It contains an array of objects. Each one needs to minimally have
+     * a name. If the name ends with "/" it is assumed to be a directory.
+     * Object references will be properly filled in (parent and source
+     * on directories, directory on files).
+     */
     populateDirectory: function(data) {
         this.set("status", READY);
-        var files = [];
-        var directories = [];
+
+        var files = [], dirSpecs = {};
         var source = this.get("source");
         data.forEach(function(item) {
-            if (!item.name) {
+            var name = item.name;
+            if (!name) {
                 console.error("Bad data, no directory/file name: ", item);
                 return;
             }
-            if (util.endsWith(item.name, "/")) {
-                item.parent = this;
-                item.source = source;
-                directories.push(exports.Directory.create(item));
-            } else {
+
+            var match = /^([^\/]+\/)(.*)/.exec(name);
+            if (match === null) {
                 item.directory = this;
                 files.push(exports.File.create(item));
+                return;
+            }
+
+            var dirName = match[1], subpath = match[2];
+            if (!(dirName in dirSpecs)) {
+                item.name = dirName;
+                item.parent = this;
+                item.source = source;
+                dirSpecs[dirName] = { item: item, subpaths: [] };
+            }
+
+            if (subpath.length > 0) {
+                dirSpecs[dirName].subpaths.push({ name: subpath });
             }
         }.bind(this));
+
+        var directories = [];
+        for (dirName in dirSpecs) {
+            var dirSpec = dirSpecs[dirName];
+            var dir = exports.Directory.create(dirSpec.item);
+            dir.populateDirectory(dirSpec.subpaths);
+            directories.push(dir);
+        }
+
         this.set("directories", directories);
         this.set("files", files);
+    },
+
+    /**
+     * Recursively delivers the paths rooted at this directory to a matcher
+     * object.
+     *
+     * @return A promise to load all the subdirectories and deliver them to the
+     *         matcher.
+     */
+    sendToMatcher: function(matcher, prefix) {
+        if (this.get('status') !== READY) {
+            throw new Error("Attempt to send a directory to a matcher " +
+                "before the directory was ready");
+        }
+
+        if (SC.none(prefix)) {
+            prefix = this.get('name');
+        }
+
+        var subdirs = this.get('directories');
+        var paths = this.get('files').concat(subdirs).map(function(obj) {
+            return prefix + obj.get('name');
+        });
+
+        matcher.addStrings(paths);
+
+        var promise = new Promise();
+        if (subdirs.length === 0) {
+            promise.resolve();
+            return promise;
+        }
+
+        var promises = subdirs.map(function(dir) {
+            return dir.sendToMatcher(matcher, prefix + dir.get('name'));
+        });
+
+        m_promise.group(promises).then(function() {
+            promise.resolve();
+        });
+
+        return promise;
     }
 });
 
@@ -63419,324 +67550,33 @@ exports.isDir = function(path) {
     return util.endsWith(path, "/");
 };
 
-});
-
-tiki.module("Filesystem:project",function(require,exports,module) {
-/* ***** BEGIN LICENSE BLOCK *****
- * Version: MPL 1.1/GPL 2.0/LGPL 2.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is Bespin.
- *
- * The Initial Developer of the Original Code is
- * Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2009
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Bespin Team (bespin@mozilla.com)
- *
- * Alternatively, the contents of this file may be used under the terms of
- * either the GNU General Public License Version 2 or later (the "GPL"), or
- * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
- * in which case the provisions of the GPL or the LGPL are applicable instead
- * of those above. If you wish to allow use of your version of this file only
- * under the terms of either the GPL or the LGPL, and not to allow others to
- * use your version of this file under the terms of the MPL, indicate your
- * decision by deleting the provisions above and replace them with the notice
- * and other provisions required by the GPL or the LGPL. If you do not delete
- * the provisions above, a recipient may use your version of this file under
- * the terms of any one of the MPL, the GPL or the LGPL.
- *
- * ***** END LICENSE BLOCK ***** */
-
-var util = require("bespin:util/util");
-
-var catalog = require("bespin:plugin").catalog;
-
-var server = catalog.getObject("server");
-var editSession = catalog.getObject("editSession");
-var files = catalog.getObject("files");
-
-/**
- * 'project show' command
+/*
+ * compute the basename of a path:
+ * /foo/bar/ -> ''
+ * /foo/bar/baz.js -> 'baz.js'
  */
-exports.showCommand = function(instruction, projectname) {
-    request.done(editSession.getStatus());
-};
-
-/**
- * 'project list' command
- */
-exports.listCommand = function(instruction, extra) {
-    files.projects(function(projectNames) {
-        var projects = "";
-        for (var x = 0; x < projectNames.length; x++) {
-            projects += projectNames[x].name + "<br/>";
-        }
-        request.done(projects);
-    });
-};
-
-/**
- * 'project create' command
- */
-exports.createCommand = function(instruction, project) {
-    if (!project) {
-        instruction.addParameterError("project", "Value missing");
-        return;
+exports.basename = function(path) {
+    var lastSlash = path.lastIndexOf("/");
+    if (lastSlash == -1) {
+        return "";
     }
-
-    var onSuccess = instruction.link(function() {
-        editSession.setProject(project);
-        request.done('Created project \'' + project + '\'.');
-        // publish("project:created", { project: project });
-    });
-
-    var onFailure = instruction.link(function(xhr) {
-        request.doneWithError('Unable to create project \'' + project +
-                ': ' + xhr.responseText);
-    });
-
-    files.makeDirectory(project, '', onSuccess, onFailure);
+    var afterSlash = path.substring(lastSlash+1);
+    return afterSlash;
 };
 
-/**
- * 'project delete' command
+/*
+ * splits the path from the extension, returning a 2 element array
+ * "/foo/bar/" -> ["/foo/bar", ""]
+ * "/foo/bar/baz.js" -> ["/foo/bar/baz", "js"]
  */
-exports.deleteCommand = function(instruction, project) {
-    if (!project || project == files.userSettingsProject) {
-        request.doneWithError('You can\'t delete the settings project.');
-        return;
+exports.splitext = function(path) {
+    var lastDot = path.lastIndexOf(".");
+    if (lastDot == -1) {
+        return [path, ""];
     }
-
-    var onSuccess = instruction.link(function() {
-        request.done('Deleted project ' + project);
-        // publish("project:deleted", { project:project });
-    });
-
-    var onFailure = instruction.link(function(xhr) {
-        request.doneWithError('Failed to delete project ' + project + ': '
-                + xhr.responseText);
-    });
-
-    files.removeDirectory(project, '', onSuccess, onFailure);
-};
-
-/**
- * 'project rename' command
- */
-exports.renameCommand = function(instruction, args) {
-    if (args.currentProject == args.newProject) {
-        return;
-    }
-
-    server.renameProject(args.currentProject, args.newProject, {
-        onSuccess: instruction.link(function() {
-            editSession.setProject(args.newProject);
-            request.done();
-            // publish("project:renamed", {
-            //     oldName: args.currentProject, newName: args.newProject });
-        }),
-        onFailure: instruction.link(function(xhr) {
-            request.doneWithError('Unable to rename project from ' +
-                    args.currentProject + " to " + args.newProject +
-                    "<br><br><em>Are you sure that the " + args.currentProject +
-                    " project exists?</em>");
-        })
-    });
-};
-
-/**
- * 'project export' command
- */
-exports.exportCommand = function(instruction, args) {
-    var project = args.project || editSession.project;
-    var type = args.archivetype;
-
-    if (!util.include(['zip','tgz','tar.gz'], type)) {
-        type = 'zip';
-    }
-
-    files.projects(function(projects) {
-        var projectDir = project + "/";
-        if (util.indexOfProperty(projects, "name", projectDir) != null) {
-            // try to do it via the iframe
-            server.exportProject(project, type);
-        } else {
-            request.doneWithError("Unabled to export project " + project +
-                    " because it doesn't seem to exist.");
-        }
-    });
-};
-
-/**
- * Given a URL, work out the project name as a default
- * For example, given http://foo.com/path/to/myproject.zip
- * return "myproject"
- */
-var calculateProjectName = function(url) {
-    var split = url.split('/');
-    var projectMaker = split[split.length - 1].split(".");
-    projectMaker.pop();
-    return projectMaker.join("_");
-};
-
-/**
- * Test the given string to return if it is a URL.
- * In this context it has to be http(s) only
- */
-var isURL = function(url) {
-    return (url && (/^http(:|s:)/.test(url)));
-};
-
-/**
- * Hack to make sure we're not going to fail to load
- */
-var dojo = {
-    connect: function() {
-        throw new Error("Find an alternative for dojo.connect()");
-    },
-    disconnect: function() {
-        throw new Error("Find an alternative for dojo.disconnect()");
-    },
-    io: {
-        iframe: {
-            send: function() {
-                throw new Error("Find an alternative for dojo.io.iframe.send()");
-            }
-        }
-    }
-};
-
-/**
- *
- */
-var upload = function(project) {
-    // use the center popup and inject a form in that points to the right place.
-    var el = document.getElementById('centerpopup');
-
-    el.innerHTML = "<div id='upload-container'>" +
-            "<form method='POST' name='upload' id='upload' " +
-            "enctype='multipart/form-data'><div id='upload-header'>" +
-            "Import project via upload <img id='upload-close' " +
-            "src='images/icn_close_x.png' align='right'>" +
-            "</div><div id='upload-content'><div id='upload-status'></div>" +
-            "<p>Browse to find the project archive that you wish to archive" +
-            "<br>and then click on the <code>Upload</code> button.</p>" +
-            "<center><input type='file' id='filedata' name='filedata' " +
-            "accept='application/zip,application/x-gzip'> " +
-            "<input type='submit' value='Upload'></center></div></form></div>";
-
-    dojo.connect(document.getElementById('upload'), "submit", function() {
-        var upload = document.getElementById('upload-status');
-        upload.innerHTML = 'Importing file into new project ' + project;
-        dojo.io.iframe.send({
-            url: '/project/import/' + project,
-            form: document.getElementById('upload'),
-            method: 'POST',
-            handleAs: 'text',
-            preventCache: true,
-            contentType: "multipart/form-data",
-            load: function(data, ioArg) {
-                upload.innerHTML = 'Thanks for uploading the file!';
-            },
-            error: function(error, ioArg) {
-                setTimeout(function() {
-                    files.projects(function(projectNames) {
-                        var isProject = function(test) {
-                            return project + '/' == test.name;
-                        };
-                        if (projectNames.some(isProject)) {
-                            // publish("project:created", { project: project });
-                            upload.innerHTML = 'Archive imported and project ' +
-                                    project + ' has been created!';
-                        } else {
-                            upload.innerHTML = 'Error uploading the file.';
-                        }
-                    });
-                }, 100);
-            }
-        });
-    });
-
-    // webpieces.showCenterPopup(el, true);
-
-    // TODO: refactor this block into webpieces if popup is modal
-    // pass the uploadClose DOM element as parameter to showCenterPopup
-    var uploadClose, overlay;
-    var hideCenterPopup = function(){
-        el.removeChild(el.firstChild);
-        // webpieces.hideCenterPopup(el);
-        dojo.disconnect(uploadClose);
-        dojo.disconnect(overlay);
-    };
-    var closeEle = document.getElementById("upload-close");
-    var overlayEle = document.getElementById("overlay");
-    uploadClose = dojo.connect(closeEle, "onclick", hideCenterPopup);
-    overlay = dojo.connect(overlayEle, "onclick", hideCenterPopup);
-};
-
-/**
- * 'project import' command
- * Can be called in three ways:<ul>
- * <li>import http://foo.com/path/to/archive.zip
- * <li>import http://foo.com/path/to/archive.zip projectName
- * <li>import projectName http://foo.com/path/to/archive.zip
- * </ul>
- */
-exports.importCommand = function(instruction, args) {
-    var project, url;
-
-    // Fail fast. Nothing given?
-    if (!args.url) {
-        instruction.addParameterError("url", "Value missing");
-        return;
-        // Checking - import http://foo.com/path/to/archive.zip
-    } else if (!args.project && isURL(args.url)) {
-        args.project = calculateProjectName(args.url);
-        // Oops, project and url are the wrong way around. That's fine
-    } else if (isURL(args.project)) {
-        project = args.project;
-        url = args.url;
-        args.project = url;
-        args.url = project;
-        // Ensure that a URL came along at some point or call up an upload box
-    } else if (!isURL(args.url)) {
-        // only a project has been passed in
-        project = args.url;
-        upload(project);
-    } else {
-        // A project and URL are here and available to do a URL based import
-        project = args.project;
-        url = args.url;
-
-        request.done("About to import " + project + " from:<br><br>" +
-                url + "<br><em>It can take awhile to download the project, " +
-                "so be patient!</em>");
-
-        server.importProject(project, url, {
-            onSuccess: function() {
-                request.done("Project " + project +
-                        " imported from:<br><br>" + url);
-                // publish("project:created", { project: project });
-            },
-            onFailure: function(xhr) {
-                request.doneWithError("Unable to import " + project +
-                        " from:<br><br>" + url + ".<br><br>Maybe due to: " +
-                        xhr.responseText);
-            }
-        });
-    }
+    var before = path.substring(0, lastDot);
+    var after = path.substring(lastDot+1);
+    return [before, after];
 };
 
 });
@@ -63859,15 +67699,40 @@ exports.Buffer = SC.Object.extend({
 
 exports.EditSession = SC.Object.extend({
     /*
-    * The "current" view is the editor component that most recently had
-    * the focus.
-    */
+     * The "current" view is the editor component that most recently had
+     * the focus.
+     */
     currentView: null,
     
     /*
-    * The "current" Buffer is the one that backs the currentView.
-    */
-    currentBuffer: null
+     * The "current" Buffer is the one that backs the currentView.
+     */
+    currentBuffer: null,
+    
+    /*
+     * figures out the full path, taking into account the current file
+     * being edited.
+     */
+    getCompletePath: function(path) {
+        if (path == null) {
+            path = "";
+        }
+
+        if (path == null || path.substring(0, 1) != "/") {
+            var buffer = this.get("currentBuffer");
+            var file;
+            if (buffer) {
+                file = buffer.get("file");
+            }
+            if (!file) {
+                path = "/" + path;
+            } else {
+                path = file.get("dirname") + path;
+            }
+        }
+
+        return path;
+    }
 });
 
 });
@@ -63912,7 +67777,7 @@ tiki.module("Embedded:index",function(require,exports,module) {
  
 "define metadata";
 ({
-    "depends": [ "AppSupport", "EditSession", "Editor" ],
+    "depends": [ "AppSupport", "EditSession", "Editor", "Settings" ],
     "provides": [
         {
             "ep": "factory",
@@ -63936,6 +67801,7 @@ var EditorView = require('Editor:views/editor').EditorView;
 var KeyListener = require('AppSupport:views/keylistener').KeyListener;
 var bespin = require("bespin:index");
 var m_editsession = require('EditSession');
+var settings = require('Settings').settings;
 var util = require("bespin:util/util");
 
 exports.EmbeddedEditor = SC.Object.extend({
@@ -64028,7 +67894,13 @@ exports.EmbeddedEditor = SC.Object.extend({
             this._hookWindowResizeEvent();
         }
 
-        // TODO: settings
+        // settings
+        var userSettings = options.settings;
+        if (!SC.none(userSettings)) {
+            for (key in userSettings) {
+                settings.set(key, userSettings[key]);
+            }
+        }
 
         // stealFocus
         var stealFocus = options.stealFocus;
@@ -64226,6 +68098,7 @@ tiki.module("HTML:index",function(require,exports,module) {
 
 "define metadata";
 ({
+    "description": "HTML syntax highlighter",
     "depends": [ "SyntaxManager" ],
     "provides": [
         {
@@ -65000,6 +68873,7 @@ tiki.module("JavaScript:index",function(require,exports,module) {
 
 "define metadata";
 ({
+    "description": "JavaScript syntax highlighter",
     "depends": [ "SyntaxManager" ],
     "provides": [
         {
@@ -65028,7 +68902,7 @@ exports.JSSyntax = StandardSyntax.create({
                 tag:    'identifier'
             },
             {
-                regex:  /^[^'"/ \tA-Za-z0-9_]+/,
+                regex:  /^[^'"\/ \tA-Za-z0-9_]+/,
                 tag:    'plain'
             },
             {
@@ -65105,7 +68979,7 @@ exports.JSSyntax = StandardSyntax.create({
 
 });
 
-tiki.require("bespin:plugins").catalog.load({"SyntaxManager": {"testmodules": [], "depends": ["DelegateSupport"], "resourceURL": "resources/SyntaxManager/", "provides": [{"register": "controllers/syntaxdirectory#discoveredNewSyntax", "ep": "extensionhandler", "name": "syntax"}]}, "Embedded": {"testmodules": [], "depends": ["AppSupport", "EditSession", "Editor"], "resourceURL": "resources/Embedded/", "provides": [{"action": "value", "pointer": "#session", "ep": "factory", "name": "session"}]}, "JavaScript": {"testmodules": [], "depends": ["SyntaxManager"], "resourceURL": "resources/JavaScript/", "provides": [{"pointer": "#JSSyntax", "ep": "syntax", "name": "js"}]}, "Canon": {"testmodules": ["tests/testKeyboard"], "depends": ["Types"], "resourceURL": "resources/Canon/", "provides": [{"indexOn": "name", "decription": "A command is a bit of functionality with optional typed arguments which can do something small like moving the cursor around the screen, or large like cloning a project from VCS.", "ep": "extensionpoint", "name": "command"}]}, "RangeUtils": {"testmodules": [], "depends": [], "resourceURL": "resources/RangeUtils/"}, "HTML": {"testmodules": [], "depends": ["SyntaxManager"], "resourceURL": "resources/HTML/", "provides": [{"pointer": "#HTMLSyntax", "ep": "syntax", "name": "html"}]}, "Editor": {"testmodules": [], "depends": ["AppSupport", "Canon", "DelegateSupport", "RangeUtils", "SyntaxManager"], "resourceURL": "resources/Editor/", "provides": [{"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "backspace", "name": "backspace"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "delete", "name": "deleteSelectionOrNextCharacter"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "down", "name": "moveDown"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "left", "name": "moveLeft"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "right", "name": "moveRight"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "up", "name": "moveUp"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_home", "name": "scrollDocStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_up", "name": "moveDocStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["ctrl_a", "meta_a"], "name": "selectAll"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_shift_up", "name": "selectDocStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_end", "name": "scrollDocEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_down", "name": "moveDocEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_shift_down", "name": "selectDocEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["home", "ctrl_left"], "name": "moveLineStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["shift_home", "ctrl_shift_left"], "name": "selectLineStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["end", "ctrl_right"], "name": "moveLineEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["shift_end", "ctrl_shift_right"], "name": "selectLineEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "name": "newline"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "pagedown", "name": "scrollPageDown"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "pageup", "name": "scrollPageUp"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_down", "name": "selectDown"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_left", "name": "selectLeft"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_right", "name": "selectRight"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_up", "name": "selectUp"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "tab", "name": "tab"}, {"pointer": "commands/editor#gotoCommand", "description": "move it! make the editor head to a line number.", "params": [{"type": "text", "name": "value", "description": "add the line number to move to in the file"}], "ep": "command", "name": "goto"}, {"pointer": "commands/editor#replaceCommand", "description": "s/foo/bar/g", "params": [{"type": "text", "name": "search", "description": "the search regex"}, {"type": "text", "name": "replace", "description": "the replacement text"}], "ep": "command", "name": "replace"}, {"pointer": "commands/editor#sortCommand", "description": "sort the current buffer", "params": [{"defaultValue": null, "type": "text", "name": "direction", "description": "optionally, sort descending"}], "ep": "command", "name": "sort"}, {"pointer": "commands/editor#entabCommand", "description": "Convert spaces to tabs.", "params": [{"defaultValue": null, "type": "text", "name": "tabsize", "description": "Optionally, specify a tab size. (Defaults to setting.)"}], "ep": "command", "name": "entab"}, {"pointer": "commands/editor#detabCommand", "description": "Convert tabs to spaces.", "params": [{"defaultValue": null, "type": "text", "name": "tabsize", "description": "Optionally, specify a tab size. (Defaults to setting.)"}], "ep": "command", "name": "detab"}, {"pointer": "commands/editor#trimCommand", "description": "trim trailing or leading whitespace", "params": [{"defaultValue": null, "type": "text", "name": "side", "description": "optionally, give a side of left, right, or both (defaults to right)"}], "ep": "command", "name": "trim"}, {"pointer": "commands/editor#ucCommand", "description": "Change all selected text to uppercase", "withKey": "CMD SHIFT U", "ep": "command", "name": "uc"}, {"pointer": "commands/editor#lcCommand", "description": "Change all selected text to lowercase", "withKey": "CMD SHIFT L", "ep": "command", "name": "lc"}]}, "Filesystem": {"testmodules": ["tests/testFileManagement"], "resourceURL": "resources/Filesystem/"}, "AppSupport": {"testmodules": [], "depends": [], "resourceURL": "resources/AppSupport/", "provides": [{"predicates": ["isApplication", true], "pointer": "controllers/undomanager#undoManagerCommand", "ep": "command", "key": ["ctrl_shift_z", "meta_shift_z"], "name": "redo"}, {"predicates": ["isApplication", true], "pointer": "controllers/undomanager#undoManagerCommand", "ep": "command", "key": ["ctrl_z", "meta_z"], "name": "undo"}]}, "DelegateSupport": {"testmodules": [], "depends": [], "resourceURL": "resources/DelegateSupport/"}, "EditSession": {"testmodules": ["tests/testSession"], "depends": ["Editor", "Filesystem"], "resourceURL": "resources/EditSession/"}, "Types": {"testmodules": ["tests/testTypes"], "depends": [], "resourceURL": "resources/Types/", "provides": [{"indexOn": "name", "description": "Commands can accept various arguments that the user enters or that are automatically supplied by the environment. Those arguments have types that define how they are supplied or completed. The pointer points to an object with methods convert(str value) and getDefault(). Both functions have `this` set to the command's `takes` parameter. If getDefault is not defined, the default on the command's `takes` is used, if there is one. The object can have a noInput property that is set to true to reflect that this type is provided directly by the system. getDefault must be defined in that case.", "ep": "extensionpoint", "name": "type"}, {"description": "Text that the user needs to enter.", "pointer": "basic#text", "ep": "type", "name": "text"}, {"description": "A JavaScript number", "pointer": "basic#number", "ep": "type", "name": "number"}, {"description": "A true/false value", "pointer": "basic#bool", "ep": "type", "name": "boolean"}, {"description": "An object that converts via JavaScript", "pointer": "basic#object", "ep": "type", "name": "object"}, {"description": "A string that is constrained to be one of a number of pre-defined values", "pointer": "basic#selection", "ep": "type", "name": "selection"}, {"description": "A type which we don't understand from the outset, but which we hope context can help us with", "pointer": "basic#deferred", "ep": "type", "name": "deferred"}]}});
+tiki.require("bespin:plugins").catalog.load({"SyntaxManager": {"resourceURL": "resources/SyntaxManager/", "description": "Provides syntax highlighting services for the editor", "depends": ["DelegateSupport"], "testmodules": [], "provides": [{"register": "controllers/syntaxdirectory#discoveredNewSyntax", "ep": "extensionhandler", "name": "syntax"}], "type": "plugins/supported"}, "Embedded": {"testmodules": [], "depends": ["AppSupport", "EditSession", "Editor", "Settings"], "resourceURL": "resources/Embedded/", "provides": [{"action": "value", "pointer": "#session", "ep": "factory", "name": "session"}], "type": "plugins/embedded"}, "Settings": {"resourceURL": "resources/Settings/", "description": "Infrastructure and commands for managing user preferences", "depends": ["Types"], "testmodules": [], "provides": [{"indexOn": "name", "register": "memory#addSetting", "ep": "extensionpoint", "name": "setting", "description": "A Choice is something that the application offers as a way to customize how it works"}, {"description": "A test setting", "defaultValue": "bb", "type": {"data": ["aa", "bb", "cc"], "name": "selection"}, "ep": "setting", "name": "test"}, {"pointer": "commands#setCommand", "description": "define and show settings", "params": [{"defaultValue": null, "type": {"pointer": "Settings:memory#getSettings", "name": "selection"}, "name": "setting", "description": "The name of the setting to display or alter"}, {"defaultValue": null, "type": {"pointer": "Settings:memory#getTypeExtFromAssignment", "name": "deferred"}, "name": "value", "description": "The new value for the chosen setting"}], "ep": "command", "name": "set"}, {"pointer": "commands#unsetCommand", "description": "unset a setting entirely", "params": [{"type": {"pointer": "Settings:memory#getSettings", "name": "selection"}, "name": "setting", "description": "The name of the setting to return to defaults"}], "ep": "command", "name": "unset"}], "type": "plugins/supported"}, "JavaScript": {"resourceURL": "resources/JavaScript/", "description": "JavaScript syntax highlighter", "depends": ["SyntaxManager"], "testmodules": [], "provides": [{"pointer": "#JSSyntax", "ep": "syntax", "name": "js"}], "type": "plugins/supported"}, "Canon": {"resourceURL": "resources/Canon/", "description": "Manages commands and their keyboard shortcuts", "depends": ["Settings", "Types"], "testmodules": ["tests/testKeyboard"], "provides": [{"indexOn": "name", "description": "A command is a bit of functionality with optional typed arguments which can do something small like moving the cursor around the screen, or large like cloning a project from VCS.", "ep": "extensionpoint", "name": "command"}, {"description": "How many typed commands do we recall for reference?", "defaultValue": 50, "type": "number", "ep": "setting", "name": "historyLength"}], "type": "plugins/supported"}, "RangeUtils": {"testmodules": [], "depends": [], "resourceURL": "resources/RangeUtils/", "description": "Utility functions for dealing with ranges of text", "type": "plugins/supported"}, "HTML": {"resourceURL": "resources/HTML/", "description": "HTML syntax highlighter", "depends": ["SyntaxManager"], "testmodules": [], "provides": [{"pointer": "#HTMLSyntax", "ep": "syntax", "name": "html"}], "type": "plugins/supported"}, "Editor": {"resourceURL": "resources/Editor/", "description": "Canvas-based text editor component and many common editing commands", "depends": ["AppSupport", "Canon", "DelegateSupport", "RangeUtils", "Settings", "SyntaxManager"], "testmodules": [], "provides": [{"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "backspace", "name": "backspace"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "delete", "name": "deleteSelectionOrNextCharacter"}, {"pointer": "commands/editor#detabCommand", "description": "Convert tabs to spaces.", "params": [{"defaultValue": null, "type": "text", "name": "tabsize", "description": "Optionally, specify a tab size. (Defaults to setting.)"}], "ep": "command", "name": "detab"}, {"pointer": "commands/editor#entabCommand", "description": "Convert spaces to tabs.", "params": [{"defaultValue": null, "type": "text", "name": "tabsize", "description": "Optionally, specify a tab size. (Defaults to setting.)"}], "ep": "command", "name": "entab"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_down", "name": "moveDocEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_up", "name": "moveDocStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "down", "name": "moveDown"}, {"pointer": "commands/editor#gotoCommand", "description": "move it! make the editor head to a line number.", "params": [{"type": "text", "name": "value", "description": "add the line number to move to in the file"}], "ep": "command", "name": "goto"}, {"pointer": "commands/editor#lcCommand", "description": "Change all selected text to lowercase", "withKey": "CMD SHIFT L", "ep": "command", "name": "lc"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "left", "name": "moveLeft"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["end", "ctrl_right"], "name": "moveLineEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["home", "ctrl_left"], "name": "moveLineStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["alt_right"], "name": "moveNextWord"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["alt_left"], "name": "movePreviousWord"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "right", "name": "moveRight"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "up", "name": "moveUp"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "name": "newline"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_home", "name": "scrollDocStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "pagedown", "name": "scrollPageDown"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "pageup", "name": "scrollPageUp"}, {"pointer": "commands/editor#replaceCommand", "description": "s/foo/bar/g", "params": [{"type": "text", "name": "search", "description": "the search regex"}, {"type": "text", "name": "replace", "description": "the replacement text"}], "ep": "command", "name": "replace"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["ctrl_a", "meta_a"], "name": "selectAll"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_end", "name": "scrollDocEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_shift_down", "name": "selectDocEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "ctrl_shift_up", "name": "selectDocStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_down", "name": "selectDown"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_left", "name": "selectLeft"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["shift_end", "ctrl_shift_right"], "name": "selectLineEnd"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["shift_home", "ctrl_shift_left"], "name": "selectLineStart"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["alt_shift_right"], "name": "selectNextWord"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": ["alt_shift_left"], "name": "selectPreviousWord"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_right", "name": "selectRight"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "shift_up", "name": "selectUp"}, {"pointer": "commands/editor#sortCommand", "description": "sort the current buffer", "params": [{"defaultValue": null, "type": "text", "name": "direction", "description": "optionally, sort descending"}], "ep": "command", "name": "sort"}, {"predicates": {"isTextView": true}, "pointer": "views/text#textViewCommand", "ep": "command", "key": "tab", "name": "tab"}, {"pointer": "commands/editor#trimCommand", "description": "trim trailing or leading whitespace", "params": [{"defaultValue": null, "type": "text", "name": "side", "description": "optionally, give a side of left, right, or both (defaults to right)"}], "ep": "command", "name": "trim"}, {"pointer": "commands/editor#ucCommand", "description": "Change all selected text to uppercase", "withKey": "CMD SHIFT U", "ep": "command", "name": "uc"}, {"description": "The distance in characters between each tab", "defaultValue": 8, "type": "number", "ep": "setting", "name": "tabstop"}], "type": "plugins/supported"}, "Filesystem": {"testmodules": ["tests/testFileManagement", "tests/testPathUtils"], "resourceURL": "resources/Filesystem/", "description": "Provides the file and directory model used within Bespin", "type": "plugins/supported"}, "AppSupport": {"resourceURL": "resources/AppSupport/", "description": "Common services used in the editor application", "depends": [], "testmodules": [], "provides": [{"pointer": "controllers/undomanager#undoManagerCommand", "ep": "command", "key": ["ctrl_shift_z"], "name": "redo"}, {"pointer": "controllers/undomanager#undoManagerCommand", "ep": "command", "key": ["ctrl_z"], "name": "undo"}], "type": "plugins/supported"}, "DelegateSupport": {"testmodules": [], "depends": [], "resourceURL": "resources/DelegateSupport/", "description": "Simple support for multiple delegates on an object", "type": "plugins/supported"}, "EditSession": {"testmodules": ["tests/testSession"], "depends": ["Editor", "Filesystem"], "resourceURL": "resources/EditSession/", "description": "Ties together the files being edited with the views on screen", "type": "plugins/supported"}, "Types": {"resourceURL": "resources/Types/", "description": "Defines parameter types for commands", "depends": [], "testmodules": ["tests/testTypes"], "provides": [{"indexOn": "name", "description": "Commands can accept various arguments that the user enters or that are automatically supplied by the environment. Those arguments have types that define how they are supplied or completed. The pointer points to an object with methods convert(str value) and getDefault(). Both functions have `this` set to the command's `takes` parameter. If getDefault is not defined, the default on the command's `takes` is used, if there is one. The object can have a noInput property that is set to true to reflect that this type is provided directly by the system. getDefault must be defined in that case.", "ep": "extensionpoint", "name": "type"}, {"description": "Text that the user needs to enter.", "pointer": "basic#text", "ep": "type", "name": "text"}, {"description": "A JavaScript number", "pointer": "basic#number", "ep": "type", "name": "number"}, {"description": "A true/false value", "pointer": "basic#bool", "ep": "type", "name": "boolean"}, {"description": "An object that converts via JavaScript", "pointer": "basic#object", "ep": "type", "name": "object"}, {"description": "A string that is constrained to be one of a number of pre-defined values", "pointer": "basic#selection", "ep": "type", "name": "selection"}, {"description": "A type which we don't understand from the outset, but which we hope context can help us with", "ep": "type", "name": "deferred"}], "type": "plugins/supported"}});
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
