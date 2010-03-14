@@ -160,7 +160,7 @@ commands.saveAs = function () {
 }
 
 commands.print = function () {
-    $("#printable-contents").html("<pre>" + commands.editor._component.getContent() + "</pre>");
+    $("#printable-contents").html("<pre>" + commands.editor.bespin.value + "</pre>");
     window.print();
 }
 

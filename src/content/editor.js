@@ -7,7 +7,7 @@ function Editor(filename) {
 Editor.prototype = {
   CHARSET: 'utf-8',
 
-  _component: null,
+  bespin: null,
 
   get fullPath() {
     return FileIO.open(this.filename);
@@ -26,26 +26,17 @@ Editor.prototype = {
 
   initUI: function (divId, window, prefs) {
     // Loads and configures the objects that the editor needs
-    this._component = tiki.require("Embedded").useBespin("edit", {
-      stealFocus: true,
-      language: this.extension,
-      loadfromdiv: false,
-      settings: {
-           autoindent: prefs.autoindent,
-           codecomplete: prefs.codecomplete,
-           highlightline: prefs.highlightline,
-           smartmove: prefs.smartmove,
-           strictlines: prefs.strictlines,
-           syntaxcheck: prefs.syntaxcheck,
-           tabsize: prefs.tabsize,
-           tabmode: prefs.tabmode,
-           tabshowspace: prefs.tabshowspace,
-           tabarrow: prefs.tabarrow,
-           // theme: prefs.theme,
-           trimonsave: prefs.trimonsave
-      }
-    });
-    this._component.setContent(this.load());
+    var m_embedded = tiki.require('Embedded');
+    var node = document.getElementById(divId);
+    var bespin = m_embedded.useBespin(node);
+    for (var i in prefs)
+        if (prefs.hasOwnProperty(i))
+            bespin.set(i, prefs[i]);
+    bespin.setFocus(true);
+    //bespin.setLineNumber(1);
+    //bespin.setLanguage(this.extension);
+    bespin.value = this.load();
+    this.bespin = bespin;
   },
 
   load: function () {
@@ -58,12 +49,12 @@ Editor.prototype = {
   },
 
   save: function () {
-    FileIO.write(this.fullPath, this._component.getContent(), 'w', this.CHARSET);
+    FileIO.write(this.fullPath, this.bespin.value, 'w', this.CHARSET);
   },
   
   saveAs: function (path) {    
     var newFile = FileIO.open(path);
-    FileIO.write(newFile, this._component.getContent(), 'w', this.CHARSET);
+    FileIO.write(newFile, this.bespin.value, 'w', this.CHARSET);
     this.filename = path;
   }
 };
