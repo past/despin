@@ -207,6 +207,7 @@ commands.getFilename = function (path) {
 commands.resize = function () {
     // Resize the editor to fill the window.
     $("#editor").height($(document).height() - $("#toolbar").outerHeight(true));
+    commands.editor && commands.editor.bespin.dimensionsChanged();
 }
 
 commands.setAutoSave = function () {

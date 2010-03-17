@@ -30,6 +30,7 @@ Editor.prototype = {
     var node = document.getElementById(divId);
     this.bespin = m_embedded.useBespin(node, {
         stealFocus: true,
+        noAutoresize: true,
         language: this.extension,
         settings: {
 //            autoindent: prefs.autoindent,
