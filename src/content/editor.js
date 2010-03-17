@@ -30,25 +30,22 @@ Editor.prototype = {
     var node = document.getElementById(divId);
     this.bespin = m_embedded.useBespin(node, {
         stealFocus: true,
-        language: this.extension/*,
+        language: this.extension,
         settings: {
-            autoindent: prefs.autoindent,
-            codecomplete: prefs.codecomplete,
-            highlightline: prefs.highlightline,
-            smartmove: prefs.smartmove,
-            strictlines: prefs.strictlines,
-            syntaxcheck: prefs.syntaxcheck,
-            tabsize: prefs.tabsize,
-            tabmode: prefs.tabmode,
-            tabshowspace: prefs.tabshowspace,
-            tabarrow: prefs.tabarrow,
-            theme: prefs.theme,
-            trimonsave: prefs.trimonsave
-        }*/
+//            autoindent: prefs.autoindent,
+//            codecomplete: prefs.codecomplete,
+//            highlightline: prefs.highlightline,
+//            smartmove: prefs.smartmove,
+//            strictlines: prefs.strictlines,
+//            syntaxcheck: prefs.syntaxcheck,
+              tabstop: prefs.tabsize,
+//            tabmode: prefs.tabmode,
+//            tabshowspace: prefs.tabshowspace,
+//            tabarrow: prefs.tabarrow,
+//            theme: prefs.theme,
+//            trimonsave: prefs.trimonsave
+        }
     });
-    for (var i in prefs)
-        if (prefs.hasOwnProperty(i))
-            this.bespin.set(i, prefs[i]);
     //bespin.setLineNumber(1);
     this.bespin.value = this.load();
   },

@@ -25,21 +25,21 @@
     </preferences>
 
     <vbox align="start">
-      <checkbox id="saveOnClose" preference="saveOnClose" label="&saveOnClose;"/>
-      <checkbox id="autoindent" preference="autoindent" label="&autoindent;"/>
-      <checkbox id="codecomplete" preference="codecomplete" label="&codecomplete;"/>
-      <checkbox id="smartmove" preference="smartmove" label="&smartmove;"/>
-      <checkbox id="highlightline" preference="highlightline" label="&highlightline;"/>
-      <checkbox id="strictlines" preference="strictlines" label="&strictlines;"/>
-      <checkbox id="syntaxcheck" preference="syntaxcheck" label="&syntaxcheck;"/>
+      <checkbox id="saveOnClose" preference="saveOnClose" label="&saveOnClose;" disabled="true"/>
+      <checkbox id="autoindent" preference="autoindent" label="&autoindent;" disabled="true"/>
+      <checkbox id="codecomplete" preference="codecomplete" label="&codecomplete;" disabled="true"/>
+      <checkbox id="smartmove" preference="smartmove" label="&smartmove;" disabled="true"/>
+      <checkbox id="highlightline" preference="highlightline" label="&highlightline;" disabled="true"/>
+      <checkbox id="strictlines" preference="strictlines" label="&strictlines;" disabled="true"/>
+      <checkbox id="syntaxcheck" preference="syntaxcheck" label="&syntaxcheck;" disabled="true"/>
       <hbox align="center">
         <label value="&tabsize;" control="tabsize"/>
         <textbox type="number" min="1" max="100" size="3" id="tabsize" preference="tabsize" label="&tabsize;"/>
       </hbox>
-      <checkbox id="tabmode" preference="tabmode" label="&tabmode;"/>
-      <checkbox id="tabshowspace" preference="tabshowspace" label="&tabshowspace;"/>
-      <checkbox id="tabarrow" preference="tabarrow" label="&tabarrow;"/>
-      <checkbox id="trimonsave" preference="trimonsave" label="&trimonsave;"/>
+      <checkbox id="tabmode" preference="tabmode" label="&tabmode;" disabled="true"/>
+      <checkbox id="tabshowspace" preference="tabshowspace" label="&tabshowspace;" disabled="true"/>
+      <checkbox id="tabarrow" preference="tabarrow" label="&tabarrow;" disabled="true"/>
+      <checkbox id="trimonsave" preference="trimonsave" label="&trimonsave;" disabled="true"/>
       <hbox align="center">
         <label value="&theme;" control="thememenulist"/>
         <menulist id="thememenulist" preference="theme" disabled="true">
