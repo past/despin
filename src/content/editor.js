@@ -28,15 +28,29 @@ Editor.prototype = {
     // Loads and configures the objects that the editor needs
     var m_embedded = tiki.require('Embedded');
     var node = document.getElementById(divId);
-    var bespin = m_embedded.useBespin(node);
+    this.bespin = m_embedded.useBespin(node, {
+        stealFocus: true,
+        language: this.extension/*,
+        settings: {
+            autoindent: prefs.autoindent,
+            codecomplete: prefs.codecomplete,
+            highlightline: prefs.highlightline,
+            smartmove: prefs.smartmove,
+            strictlines: prefs.strictlines,
+            syntaxcheck: prefs.syntaxcheck,
+            tabsize: prefs.tabsize,
+            tabmode: prefs.tabmode,
+            tabshowspace: prefs.tabshowspace,
+            tabarrow: prefs.tabarrow,
+            theme: prefs.theme,
+            trimonsave: prefs.trimonsave
+        }*/
+    });
     for (var i in prefs)
         if (prefs.hasOwnProperty(i))
-            bespin.set(i, prefs[i]);
-    bespin.setFocus(true);
+            this.bespin.set(i, prefs[i]);
     //bespin.setLineNumber(1);
-    //bespin.setLanguage(this.extension);
-    bespin.value = this.load();
-    this.bespin = bespin;
+    this.bespin.value = this.load();
   },
 
   load: function () {
