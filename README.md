@@ -1,4 +1,4 @@
 Despin
 ======
 
-Despin is a Firefox extension that turns a browser into a text editor. It embeds the awesome [Bespin](https://bespin.mozilla.com/) editor providing traditional editor functionality for local files.
+Despin is a text editor for programmers. It embeds the awesome [Ace](http://ace.ajax.org/) editor providing traditional editor functionality for local files.
