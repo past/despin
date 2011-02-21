@@ -177,13 +177,19 @@ if (!Function.prototype.bind) {
         // optimize common case
         if (arguments.length == 1) {
           var bound = function() {
-              return self.apply(this instanceof nop ? this : obj, arguments);
+              var useThis = self.prototype === undefined ?
+                                this instanceof arguments.callee :
+                                this instanceof nop;
+              return self.apply(useThis ? this : obj, arguments);
           };
         }
         else {
           var bound = function () {
+              var useThis = self.prototype === undefined ?
+                                this instanceof arguments.callee :
+                                this instanceof nop;
               return self.apply(
-                  this instanceof nop ? this : ( obj || {} ),
+                  useThis ? this : ( obj || {} ),
                   args.concat( slice.call(arguments) )
               );
           };
@@ -598,23 +604,21 @@ if (!Object.isFrozen) Object.isFrozen = no;
 // ES5 15.2.3.13
 if (!Object.isExtensible) Object.isExtensible = yes;
 
-
-
 if (!String.prototype.trim) {
     String.prototype.trim = function() {
-        return this.replace(/^\s+/, "").replace(/\s+$/, "");
+        return this.trimLeft().trimRight();
     }
 }
 
 if (!String.prototype.trimRight) {
     String.prototype.trimRight = function() {
-        return this.replace(/\s+$/, "");
+        return this.replace(/[\t\v\f\s\u00a0\ufeff]+$/, "");
     }
 }
 
 if (!String.prototype.trimLeft) {
-    String.prototype.trimRight = function() {
-        return this.replace(/^\s+/, "");
+    String.prototype.trimLeft = function() {
+        return this.replace(/^[\t\v\f\s\u00a0\ufeff]+/, "");
     }
 }
 
@@ -4792,6 +4796,13 @@ var Editor =function(renderer, session) {
         });
     };
 
+    this.moveText = function(range, toPosition) {
+        if (this.$readOnly)
+            return null;
+
+        return this.session.moveText(range, toPosition);
+    };
+
     this.copyLinesUp = function() {
         if (this.$readOnly)
             return;
@@ -5619,19 +5630,69 @@ exports.setText = function(elem, text) {
     }
 };
 
-exports.hasCssClass = function(el, name) {
-    var classes = el.className.split(/\s+/g);
-    return classes.indexOf(name) !== -1;
-};
+if (!document.documentElement.classList) {
+    exports.hasCssClass = function(el, name) {
+        var classes = el.className.split(/\s+/g);
+        return classes.indexOf(name) !== -1;
+    };
 
-/**
-* Add a CSS class to the list of classes on the given node
-*/
-exports.addCssClass = function(el, name) {
-    if (!exports.hasCssClass(el, name)) {
-        el.className += " " + name;
-    }
-};
+    /**
+    * Add a CSS class to the list of classes on the given node
+    */
+    exports.addCssClass = function(el, name) {
+        if (!exports.hasCssClass(el, name)) {
+            el.className += " " + name;
+        }
+    };
+
+    /**
+    * Remove a CSS class from the list of classes on the given node
+    */
+    exports.removeCssClass = function(el, name) {
+        var classes = el.className.split(/\s+/g);
+        while (true) {
+            var index = classes.indexOf(name);
+            if (index == -1) {
+                break;
+            }
+            classes.splice(index, 1);
+        }
+        el.className = classes.join(" ");
+    };
+
+    exports.toggleCssClass = function(el, name) {
+        var classes = el.className.split(/\s+/g), add = true;
+        while (true) {
+            var index = classes.indexOf(name);
+            if (index == -1) {
+                break;
+            }
+            add = false;
+            classes.splice(index, 1);
+        }
+        if(add)
+            classes.push(name);
+
+        el.className = classes.join(" ");
+        return add;
+    };
+} else {
+    exports.hasCssClass = function(el, name) {
+        return el.classList.contains(name);
+    };
+
+    exports.addCssClass = function(el, name) {
+        el.classList.add(name);
+    };
+
+    exports.removeCssClass = function(el, name) {
+        el.classList.remove(name);
+    };
+
+    exports.toggleCssClass = function(el, name) {
+        return el.classList.toggle(name);
+    };
+}
 
 /**
  * Add or remove a CSS class from the list of classes on the given node
@@ -5645,23 +5706,8 @@ exports.setCssClass = function(node, className, include) {
     }
 };
 
-/**
-* Remove a CSS class from the list of classes on the given node
-*/
-exports.removeCssClass = function(el, name) {
-    var classes = el.className.split(/\s+/g);
-    while (true) {
-        var index = classes.indexOf(name);
-        if (index == -1) {
-            break;
-        }
-        classes.splice(index, 1);
-    }
-    el.className = classes.join(" ");
-};
-
 exports.importCssString = function(cssText, doc){
-    doc = doc || document;        
+    doc = doc || document;
 
     if (doc.createStyleSheet) {
         var sheet = doc.createStyleSheet();
@@ -5671,7 +5717,7 @@ exports.importCssString = function(cssText, doc){
         var style = doc.createElement("style");
         style.appendChild(doc.createTextNode(cssText));
         doc.getElementsByTagName("head")[0].appendChild(style);
-    }            
+    }
 };
 
 exports.getInnerWidth = function(element) {
@@ -5688,18 +5734,18 @@ if (window.pageYOffset !== undefined) {
     exports.getPageScrollTop = function() {
         return window.pageYOffset;
     };
-    
+
     exports.getPageScrollLeft = function() {
         return window.pageXOffset;
     };
 }
 else {
     exports.getPageScrollTop = function() {
-        return ocument.body.scrollTop;
+        return document.body.scrollTop;
     };
-    
+
     exports.getPageScrollLeft = function() {
-        return ocument.body.scrollLeft;
+        return document.body.scrollLeft;
     };
 }
 
@@ -5746,11 +5792,11 @@ exports.scrollbarWidth = function() {
 /**
  * Optimized set innerHTML. This is faster than plain innerHTML if the element
  * already contains a lot of child elements.
- * 
+ *
  * See http://blog.stevenlevithan.com/archives/faster-than-innerhtml for details
  */
 exports.setInnerHtml = function(el, innerHtml) {
-	var element = el.cloneNode(false);//document.createElement("div");
+    var element = el.cloneNode(false);//document.createElement("div");
     element.innerHTML = innerHtml;
     el.parentNode.replaceChild(element, el);
     return element;
@@ -5759,15 +5805,15 @@ exports.setInnerHtml = function(el, innerHtml) {
 exports.setInnerText = function(el, innerText) {
     if ("textContent" in document.body)
         el.textContent = innerText;
-    else 
+    else
         el.innerText = innerText;
-        
+
 };
 
 exports.getInnerText = function(el) {
     if ("textContent" in document.body)
         return el.textContent;
-    else 
+    else
          return el.innerText;
 };
 
@@ -6052,7 +6098,8 @@ var TextInput = function(parentNode, host) {
 
 exports.TextInput = TextInput;
 });
-/* ***** BEGIN LICENSE BLOCK *****
+/* vim:ts=4:sts=4:sw=4:
+ * ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -6074,6 +6121,7 @@ exports.TextInput = TextInput;
  *
  * Contributor(s):
  *      Fabian Jakobs <fabian AT ajax DOT org>
+ *      Mihai Sucan <mihai DOT sucan AT gmail DOT com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -6092,6 +6140,14 @@ exports.TextInput = TextInput;
 define('ace/mouse_handler', function(require, exports, module) {
 
 var event = require("pilot/event");
+var dom = require("pilot/dom");
+
+var STATE_UNKNOWN = 0;
+var STATE_SELECT = 1;
+var STATE_DRAG = 2;
+
+var DRAG_TIMER = 250; // milliseconds
+var DRAG_OFFSET = 5; // pixels
 
 var MouseHandler = function(editor) {
     this.editor = editor;
@@ -6107,6 +6163,7 @@ var MouseHandler = function(editor) {
     event.addListener(mouseTarget, "mousedown", this.onMouseDown.bind(this));
     event.addMultiMouseDownListener(mouseTarget, 0, 2, 500, this.onMouseDoubleClick.bind(this));
     event.addMultiMouseDownListener(mouseTarget, 0, 3, 600, this.onMouseTripleClick.bind(this));
+    event.addMultiMouseDownListener(mouseTarget, 0, 4, 600, this.onMouseQuadClick.bind(this));
     event.addMouseWheelListener(mouseTarget, this.onMouseWheel.bind(this));
 };
 
@@ -6120,40 +6177,57 @@ var MouseHandler = function(editor) {
     this.getScrollSpeed = function() {
         return this.$scrollSpeed;
     };
-    
+
+    this.$getEventPosition = function(e) {
+        var pageX = event.getDocumentX(e);
+        var pageY = event.getDocumentY(e);
+        var pos = this.editor.renderer.screenToTextCoordinates(pageX, pageY);
+        pos.row = Math.max(0, Math.min(pos.row, this.editor.session.getLength()-1));
+        return pos;
+    };
+
+    this.$distance = function(ax, ay, bx, by) {
+        return Math.sqrt(Math.pow(bx - ax, 2) + Math.pow(by - ay, 2));
+    };
+
     this.onMouseDown = function(e) {
         var pageX = event.getDocumentX(e);
         var pageY = event.getDocumentY(e);
+        var pos = this.$getEventPosition(e);
         var editor = this.editor;
-    
-        var pos = editor.renderer.screenToTextCoordinates(pageX, pageY);
-        pos.row = Math.max(0, Math.min(pos.row, editor.session.getLength()-1));
+        var self = this;
+        var selectionRange = editor.getSelectionRange();
+        var selectionEmpty = selectionRange.isEmpty();
+        var state = STATE_UNKNOWN;
+        var inSelection = false;
     
         var button = event.getButton(e)
         if (button != 0) {
-            var isEmpty = editor.selection.isEmpty()
-            if (isEmpty) {
+            if (selectionEmpty) {
                 editor.moveCursorToPosition(pos);
             }
             if(button == 2) {
-                editor.textInput.onContextMenu({x: pageX, y: pageY}, isEmpty);
+                editor.textInput.onContextMenu({x: pageX, y: pageY}, selectionEmpty);
                 event.capture(editor.container, function(){}, editor.textInput.onContextMenuClose);
             }
             return;
+        } else
+            inSelection = !editor.getReadOnly() &&
+                          !selectionEmpty &&
+                          selectionRange.contains(pos.row, pos.column);
+
+        if (!inSelection) {
+            // Directly pick STATE_SELECT, since the user is not clicking inside
+            // a selection.
+            onStartSelect(pos);
         }
-    
-        if (e.shiftKey)
-            editor.selection.selectToPosition(pos)
-        else {
-            editor.moveCursorToPosition(pos);
-            if (!editor.$clickSelection)
-                editor.selection.clearSelection(pos.row, pos.column);
-        }
-    
+
         editor.renderer.scrollCursorIntoView();
     
-        var self = this;
         var mousePageX, mousePageY;
+        var overwrite = editor.getOverwrite();
+        var dragCursor = null;
+        var mousedownTime = (new Date()).getTime();
     
         var onMouseSelection = function(e) {
             mousePageX = event.getDocumentX(e);
@@ -6162,17 +6236,88 @@ var MouseHandler = function(editor) {
     
         var onMouseSelectionEnd = function() {
             clearInterval(timerId);
+            if (state == STATE_UNKNOWN)
+                onStartSelect(pos);
+            else if (state == STATE_DRAG)
+                onMouseDragSelectionEnd();
+                
             self.$clickSelection = null;
+            state = STATE_UNKNOWN;
+        };
+
+        var onMouseDragSelectionEnd = function() {
+            dom.removeCssClass(editor.container, "ace_dragging");
+
+            if (!self.$clickSelection) {
+                if (!dragCursor) {
+                    editor.moveCursorToPosition(pos);
+                    editor.selection.clearSelection(pos.row, pos.column);
+                }
+            }
+
+            if (!dragCursor)
+                return;
+
+            var selection = editor.getSelectionRange();
+            if (selection.contains(dragCursor.row, dragCursor.column)) {
+                dragCursor = null;
+                return;
+            }
+
+            editor.clearSelection();
+            var newRange = editor.moveText(selection, dragCursor);
+            if (!newRange) {
+                dragCursor = null;
+                return;
+            }
+
+            editor.selection.setSelectionRange(newRange);
         };
     
         var onSelectionInterval = function() {
             if (mousePageX === undefined || mousePageY === undefined)
                 return;
+
+            if (state == STATE_UNKNOWN) {
+                var distance = self.$distance(pageX, pageY, mousePageX, mousePageY);
+                var time = (new Date()).getTime();
+
+                
+                if (distance > DRAG_OFFSET) {
+                    state = STATE_SELECT;
+                    var cursor = editor.renderer.screenToTextCoordinates(mousePageX, mousePageY);
+                    cursor.row = Math.max(0, Math.min(cursor.row, editor.session.getLength()-1));
+                    onStartSelect(cursor);
+                } else if ((time - mousedownTime) > DRAG_TIMER) {
+                    state = STATE_DRAG;
+                    dom.addCssClass(editor.container, "ace_dragging");
+                }
+
+            }
+            
+            if (state == STATE_DRAG)
+                onDragSelectionInterval();
+            else if (state == STATE_SELECT)
+                onUpdateSelectionInterval();
+        };
     
+        function onStartSelect(pos) {
+            if (e.shiftKey)
+                editor.selection.selectToPosition(pos)
+            else {
+                if (!self.$clickSelection) {
+                    editor.moveCursorToPosition(pos);
+                    editor.selection.clearSelection(pos.row, pos.column);
+                }
+            }
+            state = STATE_SELECT;
+        }
+        
+        var onUpdateSelectionInterval = function() {
             var cursor = editor.renderer.screenToTextCoordinates(mousePageX, mousePageY);
             cursor.row = Math.max(0, Math.min(cursor.row, editor.session.getLength()-1));
     
-            if (self.$clickSelection) {
+            if (self.$clickSelection) {                
                 if (self.$clickSelection.contains(cursor.row, cursor.column)) {
                     editor.selection.setSelectionRange(self.$clickSelection);
                 } else {
@@ -6191,7 +6336,16 @@ var MouseHandler = function(editor) {
     
             editor.renderer.scrollCursorIntoView();
         };
-    
+
+        var onDragSelectionInterval = function() {
+            dragCursor = editor.renderer.screenToTextCoordinates(mousePageX, mousePageY);
+            dragCursor.row = Math.max(0, Math.min(dragCursor.row,
+                                                  editor.session.getLength() - 1));
+
+            editor.renderer.updateCursor(dragCursor, overwrite);
+            editor.renderer.scrollCursorIntoView();
+        };
+
         event.capture(editor.container, onMouseSelection, onMouseSelectionEnd);
         var timerId = setInterval(onSelectionInterval, 20);
     
@@ -6199,12 +6353,21 @@ var MouseHandler = function(editor) {
     };
     
     this.onMouseDoubleClick = function(e) {
+        var pos = this.$getEventPosition(e);
+        this.editor.moveCursorToPosition(pos);
         this.editor.selection.selectWord();
         this.$clickSelection = this.editor.getSelectionRange();
     };
     
     this.onMouseTripleClick = function(e) {
+        var pos = this.$getEventPosition(e);
+        this.editor.moveCursorToPosition(pos);
         this.editor.selection.selectLine();
+        this.$clickSelection = this.editor.getSelectionRange();
+    };
+    
+    this.onMouseQuadClick = function(e) {
+        this.editor.selectAll();
         this.$clickSelection = this.editor.getSelectionRange();
     };
     
@@ -6488,8 +6651,8 @@ exports.bindings = {
     "removeline": "Command-D",
     "gotoline": "Command-L",
     "togglecomment": "Command-7",
-    "findnext": "Command-K",
-    "findprevious": "Command-Shift-K",
+    "findnext": "Command-G",
+    "findprevious": "Command-Shift-G",
     "find": "Command-F",
     "replace": "Command-R",
     "undo": "Command-Z",
@@ -6943,7 +7106,8 @@ canon.addCommand({
 
 
 });
-/* ***** BEGIN LICENSE BLOCK *****
+/* vim:ts=4:sts=4:sw=4:
+ * ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
  * The contents of this file are subject to the Mozilla Public License Version
@@ -6965,6 +7129,7 @@ canon.addCommand({
  *
  * Contributor(s):
  *      Fabian Jakobs <fabian AT ajax DOT org>
+ *      Mihai Sucan <mihai DOT sucan AT gmail DOT com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -6990,8 +7155,6 @@ var TextMode = require("ace/mode/text").Mode;
 var Range = require("ace/range").Range;
 var Document = require("ace/document").Document;
 
-var NO_CHANGE_DELTAS = {};
-
 var EditSession = function(text, mode) {
     this.$modified = true;
     this.$breakpoints = [];
@@ -6999,7 +7162,6 @@ var EditSession = function(text, mode) {
     this.$backMarkers = {};
     this.$markerId = 1;
     this.$wrapData = [];
-    this.listeners = [];
 
     if (text instanceof Document) {
         this.setDocument(text);
@@ -7032,7 +7194,7 @@ var EditSession = function(text, mode) {
     this.onChange = function(e) {
         var delta = e.data;
         this.$modified = true;
-        if (!this.$fromUndo && this.$undoManager) {
+        if (!this.$fromUndo && this.$undoManager && !delta.ignore) {
             this.$deltas.push(delta);
             this.$informUndoManager.schedule();
         }
@@ -7042,8 +7204,9 @@ var EditSession = function(text, mode) {
     };
 
     this.setValue = function(text) {
-      this.doc.setValue(text);
-      this.$deltas = [];
+        this.doc.setValue(text);
+        this.$deltas = [];
+        this.$undoManager.reset();
     };
 
     this.getValue =
@@ -7078,7 +7241,8 @@ var EditSession = function(text, mode) {
 
     this.$defaultUndoManager = {
         undo: function() {},
-        redo: function() {}
+        redo: function() {},
+        reset: function() {}
     };
 
     this.getUndoManager = function() {
@@ -7531,7 +7695,7 @@ var EditSession = function(text, mode) {
                     action.start = delta.range.start;
             }
         }
-        
+
         // update selection based on last operation
         this.selection.clearSelection();
         var action = actions[actions.length-1];
@@ -7543,6 +7707,45 @@ var EditSession = function(text, mode) {
     
     this.replace = function(range, text) {
         return this.doc.replace(range, text);
+    };
+
+    /**
+     * Move a range of text from the given range to the given position.
+     *
+     * @param fromRange {Range} The range of text you want moved within the
+     * document.
+     * @param toPosition {Object} The location (row and column) where you want
+     * to move the text to.
+     * @return {Range} The new range where the text was moved to.
+     */
+    this.moveText = function(fromRange, toPosition) {
+        var text = this.getTextRange(fromRange);
+        this.remove(fromRange);
+
+        var toRow = toPosition.row;
+        var toColumn = toPosition.column;
+
+        // Make sure to update the insert location, when text is removed in
+        // front of the chosen point of insertion.
+        if (!fromRange.isMultiLine() && fromRange.start.row == toRow &&
+            fromRange.end.column < toColumn)
+            toColumn -= text.length;
+
+        if (fromRange.isMultiLine() && fromRange.end.row < toRow) {
+            var lines = this.doc.$split(text);
+            toRow -= lines.length - 1;
+        }
+
+        var endRow = toRow + fromRange.end.row - fromRange.start.row;
+        var endColumn = fromRange.isMultiLine() ?
+                        fromRange.end.column :
+                        toColumn + fromRange.end.column - fromRange.start.column;
+
+        var toRange = new Range(toRow, toColumn, endRow, endColumn);
+
+        this.insert(toRange.start, text);
+
+        return toRange;
     };
 
     this.indentRows = function(startRow, endRow, indentString) {
@@ -10244,8 +10447,7 @@ exports.BackgroundTokenizer = BackgroundTokenizer;
 define('ace/undomanager', function(require, exports, module) {
 
 var UndoManager = function() {
-    this.$undoStack = [];
-    this.$redoStack = [];
+    this.reset();
 };
 
 (function() {
@@ -10270,6 +10472,11 @@ var UndoManager = function() {
             this.$doc.redoChanges(deltas);
             this.$undoStack.push(deltas);
         }
+    };
+    
+    this.reset = function() {
+        this.$undoStack = [];
+        this.$redoStack = [];
     };
 
 }).call(UndoManager.prototype);
@@ -12035,14 +12242,8 @@ var Cursor = function(parentEl) {
     };
 
     this.setCursor = function(position, overwrite) {
-        this.position =
-            this.session.documentToScreenPosition(position);
-
-        if (overwrite) {
-            dom.addCssClass(this.cursor, "ace_overwrite");
-        } else {
-            dom.removeCssClass(this.cursor, "ace_overwrite");
-        }
+        this.position = position;
+        this.overwrite = overwrite;
     };
 
     this.hideCursor = function() {
@@ -12085,7 +12286,7 @@ var Cursor = function(parentEl) {
             };
         }
 
-        var pos = this.position;
+        var pos = this.session.documentToScreenPosition(this.position);
         var cursorLeft = Math.round(pos.column * this.config.characterWidth);
         var cursorTop = (pos.row - (onScreen ? this.config.firstRowScreen : 0)) *
             this.config.lineHeight;
@@ -12112,6 +12313,13 @@ var Cursor = function(parentEl) {
         if (this.isVisible) {
             this.element.appendChild(this.cursor);
         }
+        
+        if (this.overwrite) {
+            dom.addCssClass(this.cursor, "ace_overwrite");
+        } else {
+            dom.removeCssClass(this.cursor, "ace_overwrite");
+        }
+        
         this.restartTimer();
     };
 
@@ -12454,6 +12662,10 @@ define("text!ace/css/editor.css", ".ace_editor {" +
   "    box-sizing: border-box;" +
   "    -moz-box-sizing: border-box;" +
   "    -webkit-box-sizing: border-box;" +
+  "}" +
+  "" +
+  ".ace_dragging .ace_marker-layer, .ace_dragging .ace_text-layer {" +
+  "  cursor: move;" +
   "}" +
   "");
 
