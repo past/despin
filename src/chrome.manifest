@@ -1,5 +1,0 @@
-content despin content/
-locale despin en-US locale/en-US/
-skin despin classic/1.0 skin/
-overlay chrome://browser/content/browser.xul chrome://despin/content/overlay.xul
-style chrome://global/content/customizeToolbar.xul chrome://despin/skin/overlay.css
