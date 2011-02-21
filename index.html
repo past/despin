@@ -12,6 +12,9 @@
     <table id="controls">
       <tr>
       <td align="right">
+        <input type="button" name="load" id="load" value="Load">
+      </td>
+      <td align="right">
         <label for="doc">Document:</label>
         <select id="doc" size="1">
           <option value="js">JS Document</option>
@@ -71,6 +74,9 @@
       </td>
       </tr>
       <tr>
+      <td align="right">
+        <input type="button" name="save" id="save" value="Save">
+      </td>
       <td align="right">
         <label for="mode">Mode:</label>
         <select id="mode" size="1">
@@ -321,5 +327,17 @@ print "\n";
 </script>
   <script src="support/ace/demo/require.js" type="text/javascript" charset="utf-8"></script>
   <script src="support/ace/demo/boot.js" type="text/javascript"></script>
+  <script type="text/javascript">
+        var load = document.getElementById("load");
+        var onLoad = function() {
+            alert("Loaded!");
+        };
+        load.onclick = onLoad;
+        var save = document.getElementById("save");
+        var onSave = function() {
+            alert("Saved!");
+        };
+        save.onclick = onSave;
+  </script>
 </body>
 </html>

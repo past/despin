@@ -30,5 +30,5 @@ Otherwise you will have to substitute the full path to the chromeless script in 
 License
 -------
 
-Despin is licensed under the standard Mozilla MPL/GPL/LGPL tri-license, as Firefox.
+Despin is licensed under the standard Mozilla MPL/GPL/LGPL tri-license, same as Firefox.
 
