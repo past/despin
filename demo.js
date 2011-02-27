@@ -74,56 +74,9 @@ exports.launch = function(env) {
 
     var docs = {};
 
-    // Make the lorem ipsum text a little bit longer.
-    var loreIpsum = document.getElementById("plaintext").innerHTML;
-    for (var i = 0; i < 5; i++) {
-        loreIpsum += loreIpsum;
-    }
-    docs.plain = new EditSession(loreIpsum);
-    docs.plain.setUseWrapMode(true);
-    docs.plain.setWrapLimitRange(80, 80)
-    docs.plain.setMode(new TextMode());
-    docs.plain.setUndoManager(new UndoManager());
-
-    docs.js = new EditSession(document.getElementById("jstext").innerHTML);
-    docs.js.setMode(new JavaScriptMode());
-    docs.js.setUndoManager(new UndoManager());
-
-    docs.css = new EditSession(document.getElementById("csstext").innerHTML);
-    docs.css.setMode(new CssMode());
-    docs.css.setUndoManager(new UndoManager());
-
-    docs.html = new EditSession(document.getElementById("htmltext").innerHTML);
-    docs.html.setMode(new HtmlMode());
-    docs.html.setUndoManager(new UndoManager());
-
-    docs.python = new EditSession(document.getElementById("pythontext").innerHTML);
-    docs.python.setMode(new PythonMode());
-    docs.python.setUndoManager(new UndoManager());
-
-    docs.php = new EditSession(document.getElementById("phptext").innerHTML);
-    docs.php.setMode(new PhpMode());
-    docs.php.setUndoManager(new UndoManager());
-
-    docs.java = new EditSession(document.getElementById("javatext").innerHTML);
-    docs.java.setMode(new JavaMode());
-    docs.java.setUndoManager(new UndoManager());
-
-    docs.ruby = new EditSession(document.getElementById("rubytext").innerHTML);
-    docs.ruby.setMode(new RubyMode());
-    docs.ruby.setUndoManager(new UndoManager());
-
-    docs.c_cpp = new EditSession(document.getElementById("cpptext").innerHTML);
-    docs.c_cpp.setMode(new CCPPMode());
-    docs.c_cpp.setUndoManager(new UndoManager());
-
-    docs.coffee = new EditSession(document.getElementById("coffeetext").innerHTML);
-    docs.coffee.setMode(new CoffeeMode());
-    docs.coffee.setUndoManager(new UndoManager());
-
-    docs.perl = new EditSession(document.getElementById("perltext").innerHTML);
-    docs.perl.setMode(new PerlMode());
-    docs.perl.setUndoManager(new UndoManager());
+    docs.scratch = new EditSession('');
+    docs.scratch.setMode(new TextMode());
+    docs.scratch.setUndoManager(new UndoManager());
 
     var container = document.getElementById("editor");
     env.editor = new Editor(new Renderer(container, theme));
@@ -147,140 +100,17 @@ exports.launch = function(env) {
         return modes[modeEl.value];
     }
 
-    var modeEl = document.getElementById("mode");
-    var wrapModeEl = document.getElementById("soft_wrap");
-
-    bindDropdown("doc", function(value) {
-        var doc = docs[value];
-        env.editor.setSession(doc);
-
-        var mode = doc.getMode();
-        if (mode instanceof JavaScriptMode) {
-            modeEl.value = "javascript";
-        }
-        else if (mode instanceof CssMode) {
-            modeEl.value = "css";
-        }
-        else if (mode instanceof HtmlMode) {
-            modeEl.value = "html";
-        }
-        else if (mode instanceof XmlMode) {
-            modeEl.value = "xml";
-        }
-        else if (mode instanceof PythonMode) {
-            modeEl.value = "python";
-        }
-        else if (mode instanceof PhpMode) {
-            modeEl.value = "php";
-        }
-        else if (mode instanceof JavaMode) {
-            modeEl.value = "java";
-        }
-        else if (mode instanceof RubyMode) {
-            modeEl.value = "ruby";
-        }
-        else if (mode instanceof CCPPMode) {
-            modeEl.value = "c_cpp";
-        }
-        else if (mode instanceof CoffeeMode) {
-            modeEl.value = "coffee";
-        }
-        else if (mode instanceof PerlMode) {
-            modeEl.value = "perl";
-        }
-        else {
-            modeEl.value = "text";
-        }
-
-        if (!doc.getUseWrapMode()) {
-            wrapModeEl.value = "off";
-        } else {
-            wrapModeEl.value = doc.getWrapLimitRange().min || "free";
-        }
-        env.editor.focus();
-    });
-
-    bindDropdown("mode", function(value) {
-        env.editor.getSession().setMode(modes[value] || modes.text);
-    });
-
-    bindDropdown("theme", function(value) {
-        env.editor.setTheme(value);
-    });
-
-    bindDropdown("keybinding", function(value) {
-        env.editor.setKeyboardHandler(keybindings[value]);
-    });
-
-    bindDropdown("fontsize", function(value) {
-        document.getElementById("editor").style.fontSize = value;
-    });
-
-    bindDropdown("soft_wrap", function(value) {
-        var session = env.editor.getSession();
-        var renderer = env.editor.renderer;
-        switch (value) {
-            case "off":
-                session.setUseWrapMode(false);
-                renderer.setPrintMarginColumn(80);
-                break;
-            case "40":
-                session.setUseWrapMode(true);
-                session.setWrapLimitRange(40, 40);
-                renderer.setPrintMarginColumn(40);
-                break;
-            case "80":
-                session.setUseWrapMode(true);
-                session.setWrapLimitRange(80, 80);
-                renderer.setPrintMarginColumn(80);
-                break;
-            case "free":
-                session.setUseWrapMode(true);
-                session.setWrapLimitRange(null, null);
-                renderer.setPrintMarginColumn(80);
-                break;
-        }
-    });
-
-    bindCheckbox("select_style", function(checked) {
-        env.editor.setSelectionStyle(checked ? "line" : "text");
-    });
-
-    bindCheckbox("highlight_active", function(checked) {
-        env.editor.setHighlightActiveLine(checked);
-    });
-
-    bindCheckbox("show_hidden", function(checked) {
-        env.editor.setShowInvisibles(checked);
-    });
-
-    bindCheckbox("show_gutter", function(checked) {
-        env.editor.renderer.setShowGutter(checked);
-    });
-
-    bindCheckbox("show_print_margin", function(checked) {
-        env.editor.renderer.setShowPrintMargin(checked);
-    });
-
-    bindCheckbox("highlight_selected_word", function(checked) {
-        env.editor.setHighlightSelectedWord(checked);
-    });
-
-    bindCheckbox("show_hscroll", function(checked) {
-        env.editor.renderer.setHScrollBarAlwaysVisible(checked);
-    });
-
     bindButton("load", function() {
         var fp = filePicker.FilePicker("Open file");
         fp.show(function(path) {
             var contents = file.read(path);
             env.editor.getSession().setValue(contents);
-/*            docs.js = new EditSession(contents);
-            docs.js.setMode(new JavaScriptMode());
-            docs.js.setUndoManager(new UndoManager());
+            /*docs[path] = new EditSession(contents);
+            docs[path].setMode(new JavaScriptMode());
+            docs[path].setUndoManager(new UndoManager());
             var container = document.getElementById("editor");
             env.editor = new Editor(new Renderer(container, theme));
-            env.editor.setSession(docs);*/
+            env.editor.setSession(docs[path]);*/
         });
     });
 
@@ -290,25 +120,6 @@ exports.launch = function(env) {
             file.write(path, env.editor.getSession().getValue());
         });
     });
-
-
-    function bindCheckbox(id, callback) {
-        var el = document.getElementById(id);
-        var onCheck = function() {
-            callback(!!el.checked);
-        };
-        el.onclick = onCheck;
-        onCheck();
-    }
-
-    function bindDropdown(id, callback) {
-        var el = document.getElementById(id);
-        var onChange = function() {
-            callback(el.value);
-        };
-        el.onchange = onChange;
-        onChange();
-    }
 
     function bindButton(id, callback) {
         var el = document.getElementById(id);
