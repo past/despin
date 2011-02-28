@@ -39,7 +39,7 @@
 
 define(function(require, exports, module) {
 
-exports.launch = function(env) {
+exports.init = function(env) {
 
     var event = require("pilot/event");
     var Editor = require("ace/editor").Editor;
